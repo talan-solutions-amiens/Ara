@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+## Description: Lance les migrations Prisma (mode dev)
+## Usage: migrate
+## Example: "ddev migrate"
+
+set -eu
+
+cd /var/www/html
+yarn workspace confiture-rest-api prisma migrate dev

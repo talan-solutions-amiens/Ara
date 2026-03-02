@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+## Description: Démarre l'API NestJS en mode développement (hot reload)
+## Usage: dev-back
+## Example: "ddev dev-back"
+
+set -eu
+
+cd /var/www/html
+yarn dev:back

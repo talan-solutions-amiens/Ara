@@ -1,0 +1,21 @@
+# Copier ce fichier en config.local.yaml et renseigner les vraies valeurs
+# Ce fichier est ignoré par git (.ddev/.gitignore)
+#
+# Usage : cp .ddev/config.local.yaml.example .ddev/config.local.yaml
+
+web_environment:
+  # Grist
+  - GRIST_API_KEY=<votre-clé-api>
+  - GRIST_DOC_ID=<votre-doc-id>
+  - GRIST_TABLE_ID=<votre-table-id>
+
+  # S3 / stockage fichiers
+  - S3_ENDPOINT=https://<votre-endpoint>
+  - S3_REGION=<votre-region>
+  - S3_BUCKET=<votre-bucket>
+  - S3_VIRTUAL_HOST=https://<votre-virtual-host>
+  - AWS_ACCESS_KEY_ID=<votre-access-key>
+  - AWS_SECRET_ACCESS_KEY=<votre-secret-key>
+
+  # JWT
+  - JWT_SECRET=<une-chaîne-aléatoire-longue>

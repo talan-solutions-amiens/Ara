@@ -1,0 +1,146 @@
+applications:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API NestJS — confiture-rest-api
+  # ─────────────────────────────────────────────────────────────────────────────
+  api:
+    source:
+      root: "/"
+    type: "nodejs:22"
+
+    build:
+      flavor: none
+
+    hooks:
+      build: |
+        set -eux
+        corepack enable
+        corepack prepare yarn@4.9.2 --activate
+        yarn install --immutable
+        yarn workspace confiture-rest-api run build
+
+      deploy: |
+        set -eux
+        # Construit DATABASE_URL depuis les credentials de la relation "database"
+        export DATABASE_URL=$(echo "$PLATFORM_RELATIONSHIPS" | base64 --decode | \
+          jq -r '.database[0] | "postgresql://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
+        yarn workspace confiture-rest-api run migrate:prod
+
+    relationships:
+      database: "postgresql:postgresql"
+
+    web:
+      commands:
+        # Upsun injecte $PORT dans l'environnement ; l'app utilise process.env.PORT || 4000 (main.ts)
+        start: |
+          export DATABASE_URL=$(echo "$PLATFORM_RELATIONSHIPS" | base64 --decode | \
+            jq -r '.database[0] | "postgresql://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
+          exec node confiture-rest-api/dist/main
+      upstream:
+        socket_family: tcp
+        protocol: http
+      locations:
+        "/":
+          passthru: true
+
+    variables:
+      env:
+        NODE_ENV: "production"
+        # SSL géré directement dans l'URL de connexion si besoin
+        DATABASE_SSL: "false"
+        # Variables sensibles à définir via `upsun variable:create --sensitive` :
+        # JWT_SECRET
+        # FRONT_BASE_URL            (URL publique du frontend, ex: https://ara.numerique.gouv.fr)
+        # MAILER_USER
+        # MAILER_PASSWORD
+        # MAILER_SMTP_HOST
+        # MAILER_SMTP_PORT
+        # MAILER_SMTP_SECURE
+        # GRIST_API_KEY
+        # GRIST_DOC_ID
+        # GRIST_TABLE_ID
+        # S3_ENDPOINT
+        # S3_REGION
+        # S3_BUCKET
+        # S3_VIRTUAL_HOST
+        # AWS_ACCESS_KEY_ID
+        # AWS_SECRET_ACCESS_KEY
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Frontend Vue 3 — confiture-web-app (fichiers statiques)
+  # ─────────────────────────────────────────────────────────────────────────────
+  frontend:
+    source:
+      root: "/"
+    type: "nodejs:22"
+
+    build:
+      flavor: none
+
+    hooks:
+      build: |
+        set -eux
+        corepack enable
+        corepack prepare yarn@4.9.2 --activate
+        yarn install --immutable
+        yarn workspace confiture-web-app run build
+
+    web:
+      locations:
+        "/":
+          root: "confiture-web-app/dist"
+          index:
+            - "index.html"
+          # Renvoie index.html pour toutes les routes (SPA Vue Router)
+          passthru: "/index.html"
+          expires: 1h
+        "/assets":
+          root: "confiture-web-app/dist/assets"
+          # Cache longue durée — Vite intègre un hash dans les noms de fichiers
+          expires: 365d
+          passthru: false
+
+    # Variables de build Vite (optionnelles, pour Sentry)
+    # À définir via `upsun variable:create --prefix env: --build true` :
+    # VITE_SENTRY_DSN
+    # VITE_SENTRY_ENVIRONMENT
+    # SENTRY_AUTH_TOKEN
+    # SENTRY_ORG
+    # SENTRY_PROJECT
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Services managés
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  postgresql:
+    type: "postgresql:16"
+    disk: 1024
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Routage HTTP
+# ─────────────────────────────────────────────────────────────────────────────
+routes:
+  # SPA Vue — toutes les routes non-matchées ci-dessous
+  "https://{default}/":
+    type: upstream
+    upstream: "frontend:http"
+
+  # API NestJS — préfixe global /api défini dans main.ts
+  "https://{default}/api/":
+    type: upstream
+    upstream: "api:http"
+
+  # Proxy S3 pour les fichiers uploadés — monté sur /uploads dans main.ts
+  "https://{default}/uploads/":
+    type: upstream
+    upstream: "api:http"
+
+  # Swagger UI — à supprimer ou restreindre en production
+  "https://{default}/swagger/":
+    type: upstream
+    upstream: "api:http"
+
+  # Redirection www → apex
+  "https://www.{default}/":
+    type: redirect
+    to: "https://{default}/"

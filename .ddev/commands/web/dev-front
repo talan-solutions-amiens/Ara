@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+## Description: Démarre le frontend Vite en mode développement (accessible via DDEV)
+## Usage: dev-front
+## Example: "ddev dev-front"
+
+set -eu
+
+cd /var/www/html/confiture-web-app
+# --host expose Vite sur 0.0.0.0 pour que le proxy DDEV puisse y accéder
+# Le binaire vite est dans le node_modules racine (Yarn workspaces hoisting)
+/var/www/html/node_modules/.bin/vite --host --port 3000

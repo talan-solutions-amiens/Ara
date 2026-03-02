@@ -1,0 +1,40 @@
+name: ara
+type: generic
+nodejs_version: "22"
+
+database:
+  type: postgres
+  version: "16"
+
+# Variables d'environnement injectées dans le conteneur web
+# Copie ce fichier dans .ddev/config.local.yaml pour surcharger les valeurs sensibles
+web_environment:
+  - DATABASE_URL=postgres://db:db@db:5432/db
+  - DATABASE_SSL=false
+  - FRONT_BASE_URL=https://ara.ddev.site
+  - JWT_SECRET=dev-jwt-secret-a-changer-en-production
+
+  # Mail — Mailpit est intégré à DDEV (voir https://ara.ddev.site:8026)
+  # Les emails envoyés en dev sont interceptés par Mailpit
+  - MAILER_USER=dev@example.com
+  - MAILER_PASSWORD=changeme
+  - MAILER_SMTP_HOST=mailpit
+  - MAILER_SMTP_PORT=1025
+  - MAILER_SMTP_SECURE=false
+
+  # Grist — à remplacer par de vraies valeurs
+  - GRIST_API_KEY=changeme
+  - GRIST_DOC_ID=changeme
+  - GRIST_TABLE_ID=changeme
+
+  # S3 — à remplacer par de vraies valeurs
+  - S3_ENDPOINT=https://s3.example.com
+  - S3_REGION=us-east-1
+  - S3_BUCKET=changeme
+  - S3_VIRTUAL_HOST=https://s3.example.com
+  - AWS_ACCESS_KEY_ID=changeme
+  - AWS_SECRET_ACCESS_KEY=changeme
+
+hooks:
+  post-start:
+    - exec: "corepack enable && corepack prepare yarn@4.9.2 --activate && yarn install"
