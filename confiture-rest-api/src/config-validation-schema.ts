@@ -9,7 +9,7 @@ export const configValidationSchema = Joi.object({
   DATABASE_SSL: Joi.boolean().default(true),
   MAILER_USER: Joi.string().email().required(),
   MAILER_PASSWORD: Joi.string().required(),
-  MAILER_SMTP_HOST: Joi.string().hostname().required(),
+  MAILER_SMTP_HOST: Joi.string().required(),
   MAILER_SMTP_PORT: Joi.number().integer().positive().required(),
   MAILER_SMTP_SECURE: Joi.boolean().required(),
   FRONT_BASE_URL: Joi.string()
