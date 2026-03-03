@@ -20,10 +20,11 @@ applications:
 
       deploy: |
         set -eux
+        corepack prepare yarn@4.9.2 --activate
         # Construit DATABASE_URL depuis les credentials de la relation "database"
         export DATABASE_URL=$(echo "$PLATFORM_RELATIONSHIPS" | base64 --decode | \
-          jq -r '.database[0] | "postgresql://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
-        yarn workspace confiture-rest-api run migrate:prod
+          jq -r '.database[0] | "postgres://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
+        corepack yarn workspace confiture-rest-api run migrate:prod
 
     relationships:
       database: "postgresql:postgresql"
@@ -33,7 +34,7 @@ applications:
         # Upsun injecte $PORT dans l'environnement ; l'app utilise process.env.PORT || 4000 (main.ts)
         start: |
           export DATABASE_URL=$(echo "$PLATFORM_RELATIONSHIPS" | base64 --decode | \
-            jq -r '.database[0] | "postgresql://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
+            jq -r '.database[0] | "postgres://\(.username):\(.password)@\(.host):\(.port)/\(.path)"')
           exec node confiture-rest-api/dist/main
       upstream:
         socket_family: tcp
