@@ -74,14 +74,16 @@ applications:
       root: "/"
     type: "nodejs:22"
 
+    dependencies:
+      nodejs:
+        yarn: "4.9.2"
+
     build:
       flavor: none
 
     hooks:
       build: |
         set -eux
-        corepack enable
-        corepack prepare yarn@4.9.2 --activate
         yarn install --immutable
         yarn workspace confiture-web-app run build
 
@@ -99,10 +101,6 @@ applications:
           # Cache longue durée — Vite intègre un hash dans les noms de fichiers
           expires: 365d
           passthru: false
-
-    dependencies:
-      nodejs:
-        pnpm: "*"
 
     # Variables de build Vite (optionnelles, pour Sentry)
     # À définir via `upsun variable:create --prefix env: --build true` :
