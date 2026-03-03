@@ -15,8 +15,8 @@ applications:
       build: |
         set -eux
         corepack prepare yarn@4.9.2 --activate
-        yarn install --immutable
-        yarn workspace confiture-rest-api run build
+        corepack yarn install --immutable
+        corepack yarn workspace confiture-rest-api run build
 
       deploy: |
         set -eux
