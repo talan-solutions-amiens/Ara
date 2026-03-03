@@ -82,7 +82,7 @@ applications:
         set -eux
         corepack prepare yarn@4.9.2 --activate
         corepack yarn install --immutable
-        corepack yarn workspace confiture-rest-api run build
+        corepack yarn workspace confiture-web-app run build
 
     web:
       locations:
