@@ -8,14 +8,16 @@ applications:
       root: "/"
     type: "nodejs:22"
 
+    dependencies:
+      nodejs:
+        yarn: "4.9.2"
+
     build:
       flavor: none
 
     hooks:
       build: |
         set -eux
-        corepack enable
-        corepack prepare yarn@4.9.2 --activate
         yarn install --immutable
         yarn workspace confiture-rest-api run build
 
