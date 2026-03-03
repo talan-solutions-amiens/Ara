@@ -14,7 +14,7 @@ applications:
     hooks:
       build: |
         set -eux
-        corepack enable
+        corepack prepare yarn@4.9.2 --activate
         yarn install --immutable
         yarn workspace confiture-rest-api run build
 
