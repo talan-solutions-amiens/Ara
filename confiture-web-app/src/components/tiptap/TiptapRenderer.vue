@@ -13,7 +13,12 @@ const parsedDocument = computed(() => {
   try {
     return JSON.parse(props.document);
   } catch {
-    return props.document;
+    try {
+      return editor.value.markdown?.instance(props.document);
+    }
+    catch {
+      return props.document;
+    }
   }
 });
 

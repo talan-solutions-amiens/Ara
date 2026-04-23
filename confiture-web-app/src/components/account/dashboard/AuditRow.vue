@@ -18,8 +18,6 @@ import {
 } from "../../../utils";
 import AuditProgressBar from "../../audit/AuditProgressBar.vue";
 import DuplicateModal from "../../audit/DuplicateModal.vue";
-import CopyIcon from "../../icons/CopyIcon.vue";
-import EditDocumentIcon from "../../icons/EditDocumentIcon.vue";
 import Dropdown from "../../ui/Dropdown.vue";
 
 const props = defineProps<{
@@ -87,18 +85,6 @@ const csvExportFilename = computed(() => {
   }
   return `audit-${slugify(props.audit.procedureName)}.csv`;
 });
-
-function copyAuditLink(uniqueId: string) {
-  const url = `${window.location.origin}/audits/${uniqueId}/generation`;
-
-  navigator.clipboard.writeText(url).then(() => {
-    notify(
-      "success",
-      undefined,
-      `Le lien vers l’audit a bien été copié dans le presse-papier.`
-    );
-  });
-}
 
 function copyReportLink(uniqueId: string) {
   const url = `${window.location.origin}/rapport/${uniqueId}`;
@@ -235,9 +221,8 @@ defineExpose({
         name: 'audit-generation',
         params: { uniqueId: audit.editUniqueId }
       }"
-      class="fr-btn fr-btn--secondary no-external-icon audit-main-action"
+      class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-file-edit-line audit-main-action"
     >
-      <EditDocumentIcon class="fr-mr-2v main-action-icon" />
       {{
         isNotStarted
           ? "Commencer l’audit"
@@ -256,7 +241,7 @@ defineExpose({
         name: 'audit-overview',
         params: { uniqueId: audit.editUniqueId }
       }"
-      class="fr-btn fr-btn--tertiary fr-btn--icon-left fr-icon-file-text-line no-external-icon"
+      class="fr-btn fr-btn--tertiary fr-btn--icon-left fr-icon-file-text-line"
     >
       Livrables
     </RouterLink>
@@ -292,10 +277,9 @@ defineExpose({
 
           <li class="dropdown-item">
             <button
-              class="fr-btn fr-btn--tertiary-no-outline fr-m-0"
+              class="fr-btn fr-btn--tertiary-no-outline fr-btn--icon-left fr-icon-file-copy-line fr-m-0"
               @click="duplicateModal?.show()"
             >
-              <CopyIcon class="fr-mr-2v" />
               Dupliquer l’audit
               <span class="fr-sr-only"> {{ audit.procedureName }}</span>
             </button>
@@ -311,19 +295,6 @@ defineExpose({
               Modifier les paramètres
               <template v-if="windowWidth > 880">de l’audit</template>
             </RouterLink>
-          </li>
-
-          <li class="dropdown-item dropdown-item--with-meta">
-            <button
-              class="fr-btn fr-btn--tertiary-no-outline fr-btn--icon-left fr-icon-link fr-m-0"
-              @click="copyAuditLink(audit.editUniqueId)"
-            >
-              Copier le lien de l’audit
-              <span class="fr-sr-only"> {{ audit.procedureName }}</span>
-              <span class="fr-text--xs fr-text--regular dropdown-item-meta">
-                Ce lien permet de modifier l’audit
-              </span>
-            </button>
           </li>
 
           <li aria-hidden="true" class="dropdown-separator" />
@@ -424,9 +395,5 @@ defineExpose({
 .audit-main-action {
   justify-content: center;
   width: initial;
-}
-
-.main-action-icon {
-  flex: 0 0 auto;
 }
 </style>

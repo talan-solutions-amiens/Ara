@@ -4,7 +4,7 @@ import { ref } from "vue";
 
 const props = defineProps(nodeViewProps);
 
-const imgRef = ref<HTMLImageElement>();
+const isDragged = ref(false);
 
 function handleImageLoad(e: Event) {
   const imgElement = e.target as HTMLImageElement;
@@ -20,11 +20,14 @@ function handleImageLoad(e: Event) {
 <template>
   <node-view-wrapper class="vue-component">
     <img
-      ref="imgRef"
-      data-drag-handle
       v-bind="node.attrs"
+      :class="{ 'is-dragged': isDragged }"
       :style="node.attrs.localURL ? `background-image: url('${node.attrs.localURL}')` : null"
       :data-loading="node.attrs.localURL ? true : null"
+      @dragstart="isDragged = true"
+      @dragend="isDragged = false"
+      @mousedown="isDragged = true"
+      @mouseup="isDragged = false"
       @load.once="handleImageLoad"
     >
   </node-view-wrapper>

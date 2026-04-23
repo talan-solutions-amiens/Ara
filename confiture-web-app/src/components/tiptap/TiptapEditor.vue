@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import type { Level } from "@tiptap/extension-heading";
 import { Editor, EditorContent, useEditor } from "@tiptap/vue-3";
-import { onBeforeUnmount, ShallowRef, useTemplateRef, watch } from "vue";
+import { useResizeObserver } from "@vueuse/core";
 
+import { onBeforeUnmount, onMounted, shallowRef, ShallowRef, useTemplateRef, watch } from "vue";
+import { getInnerWidth } from "../../utils";
+import { getDisplayedHeadings } from "./heading/HeadingExtension";
 import { insertFilesAtSelection } from "./image/ImageUploadExtension";
-import { displayedHeadings, getTiptapEditorExtensions } from "./tiptap-extensions";
+import { getTiptapEditorExtensions } from "./tiptap-extensions";
 import TiptapButton from "./TiptapButton.vue";
 
 export interface Props {
@@ -29,17 +32,25 @@ const emit = defineEmits<{
 }>();
 
 function getContent() {
-  let jsonContent = null;
+  let content = null;
   if (props.modelValue) {
     try {
-      jsonContent = JSON.parse(props.modelValue);
+      // Try to parse as JSON (Tiptap format)
+      content = JSON.parse(props.modelValue);
     } catch {
-      // not json, most likely markdown
-      jsonContent = props.modelValue;
+      // Not JSON, treat as markdown and convert to HTML
+      // Tiptap will parse the HTML and convert it to its internal format
+      try {
+        content = editor.value.markdown?.instance(props.modelValue);
+      }
+      catch {
+        // Other
+        content = props.modelValue;
+      }
     }
   }
 
-  return jsonContent;
+  return content;
 }
 
 function setLink() {
@@ -86,10 +97,16 @@ if (props.describedBy) {
   editorAttributes["aria-describedby"] = props.describedBy;
 }
 
+// Inner width attribute, useful when resizing window
+// Value is set when editor is resized (see #onMounted)
+editorAttributes["data-inner-width"] = Infinity;
+
 const editor = useEditor({
+  contentType: "markdown",
   editorProps: {
     attributes: editorAttributes
   },
+  enablePasteRules: false,
   editable: props.editable && !props.disabled,
   content: getContent(),
   extensions: getTiptapEditorExtensions({
@@ -119,6 +136,16 @@ watch([() => props.editable, () => props.disabled], ([editable, disabled]) => {
   editor.value.setEditable(editable && !disabled);
 });
 
+const innerWidth = shallowRef(0);
+
+onMounted(() => {
+  const editorElement = editor.value.view.dom;
+  useResizeObserver(editorElement, () => {
+    const innerWidth = getInnerWidth(editorElement);
+    editorElement.setAttribute("data-inner-width", innerWidth.toString());
+  });
+});
+
 onBeforeUnmount(() => {
   editor.value?.destroy();
 });
@@ -126,7 +153,8 @@ onBeforeUnmount(() => {
 defineExpose({
   focusEditor: () => {
     editor.value.commands.focus();
-  }
+  },
+  getInnerWidth: () => innerWidth.value
 });
 </script>
 
@@ -174,7 +202,7 @@ defineExpose({
               @click="editor.chain().focus().toggleStrike().run()"
             />
           </li>
-          <li v-for="(hLevel, i) in displayedHeadings" :key="i">
+          <li v-for="(hLevel, i) in getDisplayedHeadings()" :key="i">
             <TiptapButton
               :label="`Passer en titre de niveau ${i + 1}`"
               :switch-off-label="`Retirer le niveau de titre ${i + 1}`"
@@ -329,7 +357,7 @@ defineExpose({
 }
 
 .tiptap__fake-table,
-.tiptap__fake-table td {
+.tiptap__fake-table > tr > td {
   border: none;
 }
 
@@ -365,7 +393,6 @@ defineExpose({
   color: var(--text-disabled-grey);
 }
 
-.tiptap-selection,
 .ProseMirror-selectednode {
   outline: var(--dsfr-outline) dotted 2px;
   max-width: max-content;
