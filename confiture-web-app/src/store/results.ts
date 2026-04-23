@@ -259,11 +259,9 @@ export const useResultsStore = defineStore("results", {
         this.data[update.pageId][update.topic][update.criterium] = update;
       });
 
-      // update the edition date of the local audit. It will not be the same
-      // value as the one stored in the DB but it is close enough in our case
       const auditStore = useAuditStore();
       if (auditStore.currentAudit) {
-        auditStore.currentAudit.editionDate = new Date().toISOString();
+        auditStore.updateCurrentAuditEditionDate();
       }
 
       // update filter store to record evaluated criteria
@@ -522,6 +520,13 @@ export const useResultsStore = defineStore("results", {
     isInCriteriaList(topicAndCriterium: string, auditType: AuditType): boolean {
       const [topic, criterium] = topicAndCriterium.split(".").map(Number);
       return CRITERIA_BY_AUDIT_TYPE[auditType].some(cr => cr.topic === topic && cr.criterium === criterium);
+    },
+
+    /**
+     * @returns true if all page criteria are ≠ NOT_TESTED
+     */
+    isPageCompleted(pageId: number): boolean {
+      return this.allResults?.filter(r => r.pageId === pageId).every(r => r.status !== CriteriumResultStatus.NOT_TESTED) ?? false;
     },
 
     /**

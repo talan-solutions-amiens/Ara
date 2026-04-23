@@ -268,7 +268,7 @@ describe("Audit", () => {
         `http://localhost:3000/audits/${editId}/generation/${TabSlug.AUDIT_COMMON_ELEMENTS_SLUG}`
       );
 
-      cy.get("[role='tablist'] button").then((els) => {
+      cy.get("[data-cy='tab-label']").then((els) => {
         expect(els).to.have.length(7);
         const expectedPages = [
           "Éléments transverses",
@@ -278,6 +278,65 @@ describe("Audit", () => {
           "Connexion",
           "Documentation",
           "Paramètres"
+        ];
+        expectedPages.forEach((expectedPageName, i) => {
+          cy.wrap(els[i]).should("have.text", expectedPageName);
+        });
+      });
+    });
+  });
+
+  it("User can interchange page names", () => {
+    cy.createTestAudit().then(({ editId }) => {
+      cy.visit(`http://localhost:3000/audits/${editId}/generation/`);
+
+      cy.contains("Actions").click();
+      cy.contains("Modifier les paramètres de l’audit").click();
+
+      cy.get("fieldset .fr-input-group .fr-input[id^='page-name']").then(
+        (els) => {
+          expect(els).to.have.length(8);
+          const expectedPages = [
+            "Accueil",
+            "Contact",
+            "À propos",
+            "Blog",
+            "Article",
+            "Connexion",
+            "Documentation",
+            "FAQ"
+          ];
+          expectedPages.forEach((expectedPageName, i) => {
+            cy.wrap(els[i]).should("have.value", expectedPageName);
+          });
+        }
+      );
+
+      cy.get("#page-name-1-input").clear().type("Blog");
+      cy.get("#page-name-2-input").clear().type("Accueil");
+      cy.get("#page-name-4-input").clear().type("Contact");
+      cy.get("#page-name-6-input").clear().type("FAQ");
+      cy.get("#page-name-8-input").clear().type("Connexion");
+
+      cy.contains("Enregistrer les modifications").click();
+
+      cy.url().should(
+        "eq",
+        `http://localhost:3000/audits/${editId}/generation/${TabSlug.AUDIT_COMMON_ELEMENTS_SLUG}`
+      );
+
+      cy.get("[data-cy='tab-label']").then((els) => {
+        expect(els).to.have.length(9);
+        const expectedPages = [
+          "Éléments transverses",
+          "Blog",
+          "Accueil",
+          "À propos",
+          "Contact",
+          "Article",
+          "FAQ",
+          "Documentation",
+          "Connexion"
         ];
         expectedPages.forEach((expectedPageName, i) => {
           cy.wrap(els[i]).should("have.text", expectedPageName);
@@ -301,22 +360,6 @@ describe("Audit", () => {
     });
   });
 
-  it("User can copy audit link", () => {
-    cy.createTestAudit().then(({ editId }) => {
-      cy.visit(`http://localhost:3000/audits/${editId}/generation`);
-
-      cy.contains("button", "Actions").click();
-      cy.contains("button", "Copier le lien de l’audit").click();
-      // cy.get("@audit").then((audit) => {
-      cy.assertClipboardValue(
-        `http://localhost:3000/audits/${editId}/generation`
-      );
-      cy.contains(
-        "Le lien vers l’audit a bien été copié dans le presse-papier."
-      );
-    });
-  });
-
   it("User can update notes", () => {
     cy.createTestAudit().then(({ editId }) => {
       cy.visit(`http://localhost:3000/audits/${editId}/generation`);
@@ -324,7 +367,7 @@ describe("Audit", () => {
       cy.get(".notes-desktop-link")
         .contains("button", "Ajouter des observations")
         .click();
-      cy.get("[role='textbox'").clear().type("Annotations de l’audit");
+      cy.get(".tiptap").clear().type("Annotations de l’audit");
       cy.get("dialog#notes-modal").contains("button", "Fermer").click();
 
       cy.get(".notes-desktop-link")
@@ -581,7 +624,7 @@ describe("Audit", () => {
 
       cy.focused().should("have.attr", "role", "textbox");
 
-      cy.get(".criterium-container .tiptap[role='textbox']")
+      cy.get(".criterium-container .tiptap.tiptap")
         .clear({ force: true })
         .type("Il n’y a pas de alt sur l’image du hero");
 
@@ -764,6 +807,36 @@ describe("Audit", () => {
       // Go to report page to check images count (3)
       cy.visit(`http://localhost:3000/rapport/${reportId}/details-des-non-conformites`);
       cy.get(".tiptap--rendered img").should("have.length", 3);
+    });
+  });
+
+  it("User can paste Markdown content in the comment editor (and it’s interpreted)", () => {
+    cy.createTestAudit().then(({ editId }) => {
+      cy.visit(`http://localhost:3000/audits/${editId}/generation`);
+
+      cy.get(".notes-desktop-link")
+        .contains("button", "Ajouter des observations")
+        .click();
+      cy.get(".tiptap").clear().type("Copier coller de Markdown :")
+        .type("{enter}");
+      cy.get(".tiptap").pasteText("../fixtures/mdContent.md");
+      cy.get(".tiptap strong").should("exist");
+      cy.get(".tiptap img").should("not.exist");
+    });
+  });
+
+  it("User can paste HTML text content in the comment editor (and it's not interpreted)", () => {
+    cy.createTestAudit().then(({ editId }) => {
+      cy.visit(`http://localhost:3000/audits/${editId}/generation`);
+
+      cy.get(".notes-desktop-link")
+        .contains("button", "Ajouter des observations")
+        .click();
+      cy.get(".tiptap").clear().type("Copier coller de texte HTML :")
+        .type("{enter}");
+      cy.get(".tiptap").pasteText("../fixtures/notMdContent.txt");
+      cy.get(".tiptap strong").should("not.exist");
+      cy.get(".tiptap img").should("not.exist");
     });
   });
 

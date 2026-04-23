@@ -1,11 +1,10 @@
-import { Slice } from "@tiptap/pm/model";
 import { EditorState, Plugin, PluginKey, Selection, Transaction } from "@tiptap/pm/state";
 import { canSplit } from "@tiptap/pm/transform";
 import { Decoration, EditorView } from "@tiptap/pm/view";
-import ky from "ky";
+import { useFileHandler } from "../../../composables/useFileHandler";
 import { useNotifications } from "../../../composables/useNotifications";
-import { FILE_SIZE_LIMIT, FileErrorMessage, MAX_UPLOAD_FILES_COUNT } from "../../../enums";
-import { createFileFromUrl, getUploadUrl, handleFileUploadError } from "../../../utils";
+import { FILE_SIZE_LIMIT, getFileMessage, MAX_UPLOAD_FILES_COUNT } from "../../../enums";
+import { createFileFromUrl } from "../../../utils";
 import { PlaceholderPlugin } from "./PlaceholderPlugin";
 
 interface ImageImportPluginOptions {
@@ -27,14 +26,16 @@ interface ImageImportPluginOptions {
  *   replacing the placeholder with a smooth visual transition
  * - errors are notified to user:
  *   - local errors:
- *      - UPLOAD_MAX_FILES_COUNT
- *      - UPLOAD_FORMAT
- *      - UPLOAD_SIZE
+ *      - UPLOAD_ERROR_FORMAT_IMAGE
+ *      - UPLOAD_ERROR_MULTIPLE_FILES
+ *      - UPLOAD_ERROR_SIZE
+ *      - UPLOAD_ERROR_SIZE_IMAGE
  *      - UNKNOWN_ERROR
- *   - server errors (see utils#handleFileUploadError):
- *      - UPLOAD_TIMEOUT
- *      - UPLOAD_FORMAT
- *      - UPLOAD_SIZE
+ *   - server errors (see useFileHandler#handleFileUploadError):
+ *      - UPLOAD_ERROR_TIMEOUT
+ *      - UPLOAD_ERROR_FORMAT_IMAGE
+ *      - UPLOAD_ERROR_SIZE
+ *      - UPLOAD_ERROR_SIZE_IMAGE
  *      - UNKNOWN_ERROR
  *
  * Limitations:
@@ -57,15 +58,39 @@ export class ImageImportPlugin extends Plugin {
     super({
       key: new PluginKey("handleImageImport"),
       props: {
-        handleDrop: (view, event, slice, moved) =>
-          this.handleDrop(view, event, slice, moved),
-        handlePaste: (view, event, slice) =>
-          this.handlePaste(view, event, slice)
+        transformPastedHTML: (html, _view) =>
+          this.transformPastedHTML(html),
+        handleDrop: (view, event, _slice, moved) =>
+          this.handleDrop(view, event, moved),
+        handlePaste: (view, event, _slice) =>
+          this.handlePaste(view, event)
       }
     });
   }
 
   private notify = useNotifications();
+
+  private pasteError: string | null = null;
+
+  private fileHandler = useFileHandler();
+
+  private transformPastedHTML(html: string) {
+    // Remove all <img> elements with src not beginning with "/uploads/"
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const baseURL = window.location.origin;
+    const imgs = Array.from(doc.querySelectorAll(`img:not([src^=\"/uploads/\"]):not([src^=\"${baseURL}/uploads/\"])`));
+    // TODO: import images that can be imported
+    imgs.forEach(img => img.remove());
+    if (imgs.length === 1) {
+      this.pasteError = getFileMessage("FETCH_ERROR_IMAGE");
+    } else if (imgs.length > 1) {
+      this.pasteError = getFileMessage("UPLOAD_ERROR_FROM_HTML_MULTIPLE");
+    }
+
+    return doc.body.innerHTML;
+  }
 
   /**
    * handleDrop: called when something is dropped on the editor.
@@ -74,7 +99,6 @@ export class ImageImportPlugin extends Plugin {
   private handleDrop(
     view: EditorView,
     dragEvent: DragEvent,
-    _slice: Slice,
     moved: boolean
   ): boolean {
     if (moved || !dragEvent.dataTransfer || !dragEvent.dataTransfer.files) {
@@ -107,8 +131,7 @@ export class ImageImportPlugin extends Plugin {
    */
   private handlePaste(
     view: EditorView,
-    clipboardEvent: ClipboardEvent,
-    _slice: Slice | undefined
+    clipboardEvent: ClipboardEvent
   ): boolean {
     if (!clipboardEvent.clipboardData) {
       return false;
@@ -152,7 +175,7 @@ export class ImageImportPlugin extends Plugin {
       // Handle image imports asynchronously
       this.getFilesFromUriItems(uriItems, (files) => {
         if (files.length < 1) {
-          this.notify("error", undefined, FileErrorMessage.FETCH_ERROR);
+          this.notify("error", undefined, getFileMessage("FETCH_ERROR_IMAGE"));
         } else {
           this.handleImagesImport(view, pos, files, options);
         }
@@ -160,20 +183,11 @@ export class ImageImportPlugin extends Plugin {
       return true;
     }
 
-    // Browser may pass a list of HTML content items
-    const htmlItems = dataTransferItems.filter((item) => {
-      return (item.kind === "string" && item.type.match("^text/html"));
-    });
-    if (htmlItems.length > 0) {
-      htmlItems.forEach(htmlItem => {
-        htmlItem.getAsString((html) =>
-          view.pasteHTML(this.removeImgsFromHTML(html))
-        );
-      });
-      return true;
-    }
-
     // Tiptap will handle other formats (e.g. HTML text)
+    if (this.pasteError) {
+      this.notify("error", undefined, this.pasteError);
+      this.pasteError = null;
+    }
     return false;
   }
 
@@ -193,7 +207,7 @@ export class ImageImportPlugin extends Plugin {
     options?: { replaceSelection: boolean }
   ): void {
     if (files.length > MAX_UPLOAD_FILES_COUNT) {
-      this.notify("error", undefined, FileErrorMessage.UPLOAD_MAX_FILES_COUNT);
+      this.notify("error", undefined, getFileMessage("UPLOAD_ERROR_MULTIPLE_FILES"));
       return;
     }
     for (let i = 0, il = files.length, file; i < il; i++) {
@@ -232,13 +246,13 @@ export class ImageImportPlugin extends Plugin {
   ): void {
     // Check image format
     if (!file.type.startsWith("image")) {
-      this.notify("error", undefined, FileErrorMessage.UPLOAD_FORMAT);
+      this.notify("error", undefined, getFileMessage("UPLOAD_ERROR_FORMAT_IMAGE"));
       return;
     }
 
     // Check max size
     if (file.size > FILE_SIZE_LIMIT) {
-      this.notify("error", undefined, FileErrorMessage.UPLOAD_SIZE);
+      this.notify("error", undefined, getFileMessage("UPLOAD_ERROR_SIZE_IMAGE"));
       return;
     }
 
@@ -253,7 +267,7 @@ export class ImageImportPlugin extends Plugin {
     element.onerror = () => {
       // Error on the placeholder image. Should not happen…
       // See [Image loading errors | MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img#image_loading_errors)
-      this.notify("error", undefined, FileErrorMessage.UNKNOWN_ERROR);
+      this.notify("error", "Erreur inconnue", getFileMessage("UNKNOWN_ERROR"));
     };
     element.onload = () => {
       element.setAttribute("width", element.width.toString());
@@ -314,69 +328,47 @@ export class ImageImportPlugin extends Plugin {
    *   1. cleans up the possible placeholder.
    *   2. notifies with an error
    */
-  private uploadAndReplacePlaceholder(
+  private async uploadAndReplacePlaceholder(
     view: EditorView,
     file: File,
     id: any,
     element: HTMLImageElement,
     localURL: string
-  ): void {
-    this.uploadImage(file).then(
-      (imgUrl: string) => {
-        this.options.onImageUploadComplete?.(file.name);
+  ): Promise<void> {
+    try {
+      const imgUrl = await this.fileHandler.uploadEditorImage(file);
+      this.options.onImageUploadComplete?.(file.name);
 
-        const placeholder = this.findPlaceholderDecoration(view.state, id);
-        const pos: number | undefined = placeholder?.from;
+      const placeholder = this.findPlaceholderDecoration(view.state, id);
+      const pos: number | undefined = placeholder?.from;
 
-        // If the content around the placeholder has been deleted,
-        // do not insert the image
-        if (pos === undefined) {
-          return;
-        }
-
-        // Otherwise, replace the placeholder with a new image node
-        // Tip: the local blob URL is used as a background image
-        //      to ease the transition
-        const state = view.state;
-        const tr = state.tr;
-        const node = state.schema.nodes.image.create({
-          src: imgUrl,
-          alt: file.name === "external" ? "Image insérée" : file.name,
-          width: placeholder?.spec.width,
-          height: placeholder?.spec.height,
-          localURL
-        });
-        tr.replaceWith(pos, pos, node);
-        tr.setMeta(this.placeholderPlugin, { element, remove: { id } });
-
-        view.dispatch(tr);
-      },
-      async (reason: Error) => {
-        // On failure, clean up the placeholder
-        view.dispatch(
-          view.state.tr.setMeta(this.placeholderPlugin, { element, remove: { id } })
-        );
-        this.notify("error", undefined, await handleFileUploadError(reason));
+      // If the content around the placeholder has been deleted,
+      // do not insert the image
+      if (pos === undefined) {
+        return;
       }
-    );
-  }
 
-  /**
-   * Function to upload an image file inside the editor
-   * @returns a promise that resolves with the URL of the uploaded image
-   */
-  private async uploadImage(file: File): Promise<string> {
-    const formData = new FormData();
-    // To handle non-ascii characters, we encode the filename here and decode it on the back
-    formData.set("file", file, encodeURI(file.name));
-
-    const imageUploadKey = (await ky
-      .post(`/api/audits/editor/images`, { body: formData, timeout: 15_000 })
-      .text()) as string;
-
-    const url = getUploadUrl(imageUploadKey);
-
-    return url;
+      // Otherwise, replace the placeholder with a new image node
+      // Tip: the local blob URL is used as a background image
+      //      to ease the transition
+      const state = view.state;
+      const tr = state.tr;
+      const node = state.schema.nodes.image.create({
+        src: imgUrl,
+        alt: file.name === "external" ? "Image insérée" : file.name,
+        width: placeholder?.spec.width,
+        height: placeholder?.spec.height,
+        localURL
+      });
+      tr.replaceWith(pos, pos, node);
+      tr.setMeta(this.placeholderPlugin, { element, remove: { id } });
+      view.dispatch(tr);
+    } catch {
+      // On failure, clean up the placeholder
+      view.dispatch(
+        view.state.tr.setMeta(this.placeholderPlugin, { element, remove: { id } })
+      );
+    };
   }
 
   /**
@@ -411,26 +403,6 @@ export class ImageImportPlugin extends Plugin {
       const files = results.filter((file): file is File => file !== null);
       onComplete(files);
     });
-  }
-
-  private removeImgsFromHTML(html: string): string {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    const imgs = Array.from(doc.querySelectorAll("img"));
-    // const urls = imgs.map((img) => img.src);
-
-    // TODO: import images that can be imported
-
-    // Remove all <img> elements
-    imgs.forEach(img => img.remove());
-    if (imgs.length === 1) {
-      this.notify("error", undefined, FileErrorMessage.UPLOAD_FROM_HTML_ERROR);
-    } else if (imgs.length > 1) {
-      this.notify("error", undefined, FileErrorMessage.UPLOAD_MULTIPLE_FROM_HTML_ERROR);
-    }
-
-    return doc.body.innerHTML;
   }
 
   /**

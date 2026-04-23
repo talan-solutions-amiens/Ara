@@ -1,4 +1,3 @@
-import { Component } from "vue";
 import { RouterScrollBehavior } from "vue-router";
 
 import { components, paths } from "./confiture-api";
@@ -97,6 +96,8 @@ export type UpdateAuditRequestData = Omit<Audit, "environments" | "pages"> & {
 
 export type UpdateAuditStatementRequestData = paths["/audits/{editUniqueId}/statement"]["put"]["requestBody"]["content"]["application/json"];
 
+export type CreateDebugAuditRequestData = paths["/debug/create-audit"]["post"]["requestBody"]["content"]["application/json"];
+
 export enum CriteriumResultStatus {
   NOT_TESTED = "NOT_TESTED",
   COMPLIANT = "COMPLIANT",
@@ -152,8 +153,9 @@ export type ScrollPosition = Awaited<ScrollBehaviorResult>;
  */
 export interface TabData {
   label: string;
+  hiddenLabelSuffix?: string;
   id?: number;
-  icon?: Component;
+  icon?: string;
   component: object;
   componentParams?: object;
 }

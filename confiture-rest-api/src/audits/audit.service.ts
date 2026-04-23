@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import _, { isEqual, omit, orderBy, partition, pick, setWith, sortBy, uniqBy } from "lodash";
+import _, { intersectionBy, isEqual, omit, orderBy, partition, pick, setWith, sortBy, uniqBy } from "lodash";
 import { nanoid } from "nanoid";
 import sharp from "sharp";
 import {
@@ -19,6 +19,7 @@ import { AuditListingItemDto } from "./dto/audit-listing-item.dto";
 import { AuditReportDto } from "./dto/audit-report.dto";
 import { AuditDto } from "./dto/entities/audit.dto";
 import { CriterionResultDto } from "./dto/entities/criterion-result.dto";
+import { StatementDto } from "./dto/entities/statement.dto";
 import { GetPageWithResultsDto } from "./dto/get-page-with-results.dto";
 import { CreateAuditDto } from "./dto/requests/create-audit.dto";
 import { PatchAuditDto } from "./dto/requests/patch-audit.dto";
@@ -29,7 +30,6 @@ import { FileStorageService } from "./file-storage.service";
 import { AUDIT_PRISMA_SELECT } from "./prisma-selects";
 
 const AUDIT_EDIT_INCLUDE = {
-  recipients: true,
   environments: true,
   transverseElementsPage: true,
   pages: true,
@@ -57,6 +57,20 @@ const isTransverse = (c: CriterionResult, transversePageId: number) =>
   c.pageId === transversePageId;
 
 const TRANSVERSE_ELEMENTS_SLUG: string = "elements-transverses";
+
+// Detect whether names are identical but in a different order
+const hasNamesAreIdenticalButReordered = (currentAuditPages: { name: string; order: number }[], previousAuditPages: { name: string; order: number }[]) => {
+  const intersectingCurrentAuditPages = intersectionBy(currentAuditPages, previousAuditPages, x => x.name);
+  const intersectingPreviousAuditPages = intersectionBy(previousAuditPages, currentAuditPages, x => x.name);
+
+  const namesInOrder = orderBy(intersectingCurrentAuditPages, x => x.order).map(p => p.name);
+  const previousNamesInOrder = orderBy(intersectingPreviousAuditPages, x => x.order).map(p => p.name);
+
+  return isEqual(namesInOrder.length, previousNamesInOrder.length) &&
+        !isEqual(JSON.stringify(namesInOrder), JSON.stringify(previousNamesInOrder)) &&
+        namesInOrder.every(name => previousNamesInOrder.includes(name)) &&
+        previousNamesInOrder.every(name => namesInOrder.includes(name));
+};
 
 @Injectable()
 export class AuditService {
@@ -181,7 +195,6 @@ export class AuditService {
     return this.prisma.audit.findUnique({
       where: { editUniqueId: uniqueId },
       include: {
-        recipients: true,
         environments: true,
         pages: true,
         sourceAudit: {
@@ -198,7 +211,6 @@ export class AuditService {
     return this.prisma.audit.findUnique({
       where: { consultUniqueId: uniqueId },
       include: {
-        recipients: true,
         environments: true,
         pages: true,
         sourceAudit: {
@@ -382,6 +394,22 @@ export class AuditService {
         include: AUDIT_EDIT_INCLUDE
       });
 
+      if (updatedPages.length > 0) {
+        // If reorganization detected, temporarily rename to avoid database integrity constraints
+        if (hasNamesAreIdenticalButReordered(updatedPages, previousAudit.pages)) {
+          await this.prisma.$transaction(async (tx) => {
+            // temporary slugs
+            for (const p of updatedPages) {
+              await tx.auditedPage.update({ where: { id: p.id }, data: { slug: `${p.slug}_temp` } });
+            }
+            // real slugs
+            for (const p of updatedPages) {
+              await tx.auditedPage.update({ where: { id: p.id }, data: { slug: p.slug } });
+            }
+          });
+        }
+      }
+
       const audit = await this.prisma.audit.update({
         where: { editUniqueId: uniqueId },
         data: {
@@ -477,16 +505,26 @@ export class AuditService {
         select: AUDIT_PRISMA_SELECT
       });
 
-      // check the diffenences between the audit after and before the update
+      let returnedAudit: AuditDto = audit;
+
+      // check the differences between the audit after and before the update
       const changedProperties: (keyof typeof audit)[] =
         _
           .differenceWith(Object.entries(audit), Object.entries(previousAudit), _.isEqual)
-          .map(entries => entries[0] as keyof typeof audit);
+          .map(entries => entries[0] as keyof typeof audit)
+          .filter(el => !["notesFiles", "transverseElementsPage", "pages"].includes(el));
 
-      // update audit edition date only if a property other than below has been changed
+      const pagesChanged = !isEqual(
+        audit.pages.map(p => pick(p, ["id", "name", "url", "order"])),
+        previousAudit.pages.map(p => pick(p, ["id", "name", "url", "order"]))
+      );
+
+      // update audit edition date only if:
+      // - it has a `publicationDate`
+      // - a property other than below has been changed
       const ignoredChanges: (keyof typeof audit)[] = ["auditorName", "procedureName", "auditorEmail"];
-      if (!changedProperties.every(changedProperty => ignoredChanges.includes(changedProperty))) {
-        await this.updateAuditEditDate(uniqueId);
+      if ((!changedProperties.every(changedProperty => ignoredChanges.includes(changedProperty)) || pagesChanged) && audit.publicationDate) {
+        returnedAudit = await this.updateAuditEditDate(uniqueId);
       }
 
       // Update statement date when `procedureName` or `pages` change and if there is a `statementPublicationDate`
@@ -497,10 +535,10 @@ export class AuditService {
           changedProperties.includes("procedureName"))
         )
       ) {
-        return (await this.updateStatementDate(uniqueId)) ?? audit;
+        returnedAudit = (await this.updateStatementDate(uniqueId)) ?? audit;
       }
 
-      return audit;
+      return returnedAudit;
     } catch (e) {
       // Audit does not exist
       // https://www.prisma.io/docs/reference/api-reference/error-reference#p2025
@@ -521,7 +559,7 @@ export class AuditService {
     try {
       const audit = await this.prisma.audit.update({
         where: { editUniqueId: uniqueId },
-        data: { notes: data.notes }
+        data: { notes: data.notes, editionDate: new Date() }
       });
 
       return audit;
@@ -611,6 +649,7 @@ export class AuditService {
     }
   }
 
+  /** TODO: we don’t use this function anymore */
   async saveExampleImage(
     editUniqueId: string,
     pageId: number,
@@ -752,6 +791,8 @@ export class AuditService {
       }
     });
 
+    await this.updateAuditEditDate(editUniqueId);
+
     return noteFile;
   }
 
@@ -796,6 +837,8 @@ export class AuditService {
         id: fileId
       }
     });
+
+    await this.updateAuditEditDate(editUniqueId);
 
     return true;
   }
@@ -972,88 +1015,31 @@ export class AuditService {
   ): Promise<AuditReportDto | undefined> {
     const audit = await this.prisma.audit.findUnique({
       where: { consultUniqueId },
-      include: AUDIT_EDIT_INCLUDE
+      include: {
+        ...AUDIT_EDIT_INCLUDE,
+        notesFiles: {
+          orderBy: {
+            id: "desc"
+          }
+        }
+      }
     });
 
     if (!audit) {
       return;
     }
 
-    const results = await Promise.all([
-      this.prisma.criterionResult.findMany({
-        where: {
-          page: {
-            auditUniqueId: audit.editUniqueId
-          },
-          OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
-        },
-        include: {
-          exampleImages: true
-        }
-      }),
-      this.prisma.criterionResult.findMany({
-        where: {
-          pageId: audit.transverseElementsPageId,
-          OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
-        },
-        include: {
-          exampleImages: true
-        }
-      })
-    ]).then(results => results.flat());
-
-    const groupedCriteria = results.reduce<Record<string, CriterionResult[]>>(
-      (acc, c) => {
-        const key = `${c.topic}.${c.criterium}`;
-        if (acc[key]) {
-          acc[key].push(c);
-        } else {
-          acc[key] = [c];
-        }
-        return acc;
-      },
-      {}
-    );
-
-    const applicableCriteria = Object.values(groupedCriteria).filter(
-      (criteria) => criteria.some((c) => isCompliant(c) || isNotCompliant(c))
-    );
-
-    const compliantCriteria = applicableCriteria.filter((criteria) => {
-      // remove untested transverse criterion
-      const withoutUntestedTrans = criteria.filter(
-        (c) =>
-          !isTransverse(c, audit.transverseElementsPageId) || !isNotTested(c)
-      );
-
-      return (
-        withoutUntestedTrans.some((c) => isCompliant(c)) &&
-        withoutUntestedTrans.every((c) => isCompliant(c) || isNotApplicable(c))
-      );
-    });
-
-    const notCompliantCriteria = applicableCriteria.filter((criteria) => {
-      return criteria.some((c) => isNotCompliant(c));
-    });
-
-    const notApplicableCriteria = Object.values(groupedCriteria).filter(
-      (criteria) => {
-        // remove untested transverse criterion
-        const withoutUntestedTrans = criteria.filter(
-          (c) =>
-            !isTransverse(c, audit.transverseElementsPageId) || !isNotTested(c)
-        );
-
-        return withoutUntestedTrans.every((c) => isNotApplicable(c));
-      }
-    );
-
-    const accessibilityRate =
-      Math.round(
-        (compliantCriteria.length / applicableCriteria.length) * 100
-      ) || 0;
+    const results = await this.getAuditResults(audit);
 
     const totalCriteriaCount = CRITERIA_BY_AUDIT_TYPE[audit.auditType].length;
+
+    const {
+      compliantCriteria,
+      notCompliantCriteria,
+      applicableCriteria,
+      notApplicableCriteria,
+      accessibilityRate
+    } = AuditService.groupResultsByStatus(results, audit.transverseElementsPageId);
 
     const report: AuditReportDto = {
       consultUniqueId: audit.consultUniqueId,
@@ -1254,6 +1240,93 @@ export class AuditService {
     };
 
     return report;
+  }
+
+  private getAuditResults(audit: Pick<Audit, "editUniqueId" | "auditType" | "transverseElementsPageId">) {
+    return Promise.all([
+      this.prisma.criterionResult.findMany({
+        where: {
+          page: {
+            auditUniqueId: audit.editUniqueId
+          },
+          OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
+        },
+        include: {
+          exampleImages: true
+        }
+      }),
+      this.prisma.criterionResult.findMany({
+        where: {
+          pageId: audit.transverseElementsPageId,
+          OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
+        },
+        include: {
+          exampleImages: true
+        }
+      })
+    ]).then(results => results.flat());
+  }
+
+  public static groupResultsByStatus(results: CriterionResult[], transversePageId: number) {
+    const groupedCriteria = results.reduce<Record<string, CriterionResult[]>>(
+      (acc, c) => {
+        const key = `${c.topic}.${c.criterium}`;
+        if (acc[key]) {
+          acc[key].push(c);
+        } else {
+          acc[key] = [c];
+        }
+        return acc;
+      },
+      {}
+    );
+
+    const applicableCriteria = Object.values(groupedCriteria).filter(
+      (criteria) => criteria.some((c) => isCompliant(c) || isNotCompliant(c))
+    );
+
+    const compliantCriteria = applicableCriteria.filter((criteria) => {
+      // remove untested transverse criterion
+      const withoutUntestedTrans = criteria.filter(
+        (c) =>
+          !isTransverse(c, transversePageId) || !isNotTested(c)
+      );
+
+      return (
+        withoutUntestedTrans.some((c) => isCompliant(c)) &&
+          withoutUntestedTrans.every((c) => isCompliant(c) || isNotApplicable(c))
+      );
+    });
+
+    const notCompliantCriteria = applicableCriteria.filter((criteria) => {
+      return criteria.some((c) => isNotCompliant(c));
+    });
+
+    const notApplicableCriteria = Object.values(groupedCriteria).filter(
+      (criteria) => {
+        // remove untested transverse criterion
+        const withoutUntestedTrans = criteria.filter(
+          (c) =>
+            !isTransverse(c, transversePageId) || !isNotTested(c)
+        );
+
+        return withoutUntestedTrans.every((c) => isNotApplicable(c));
+      }
+    );
+
+    const accessibilityRate =
+      Math.round(
+        (compliantCriteria.length / applicableCriteria.length) * 100
+      ) || 0;
+
+    return {
+      groupedCriteria,
+      applicableCriteria,
+      compliantCriteria,
+      notCompliantCriteria,
+      notApplicableCriteria,
+      accessibilityRate
+    };
   }
 
   async isAuditComplete(uniqueId: string): Promise<boolean> {
@@ -1675,6 +1748,60 @@ export class AuditService {
     ];
 
     return orderedAudits;
+  }
+
+  /**
+   * Returns a Promise that resolves to the accessibility statement data or null if the audit cannot be found
+   */
+  async getAuditStatementWithConsultId(consultUniqueId: string): Promise<StatementDto | null> {
+    const audit = await this.prisma.audit.findUnique({
+      where: { consultUniqueId },
+      select: AUDIT_PRISMA_SELECT
+    });
+
+    if (!audit) {
+      return null;
+    }
+
+    const results = await this.getAuditResults(audit);
+
+    const {
+      accessibilityRate
+    } = AuditService.groupResultsByStatus(results, audit.transverseElementsPageId);
+
+    const statement: StatementDto = {
+      consultUniqueId: audit.consultUniqueId,
+
+      editionDate: audit.editionDate,
+      creationDate: audit.creationDate,
+      publicationDate: audit.publicationDate,
+      statementEditionDate: audit.statementEditionDate,
+      statementPublicationDate: audit.statementPublicationDate,
+
+      auditorName: audit.auditorName,
+      auditorEmail: audit.auditorEmail,
+      auditorOrganisation: audit.auditorOrganisation,
+
+      contactEmail: audit.contactEmail,
+      contactFormUrl: audit.contactFormUrl,
+
+      procedureInitiator: audit.initiator,
+      procedureName: audit.procedureName,
+      procedureUrl: audit.procedureUrl,
+
+      accessibilityRate: accessibilityRate,
+
+      notCompliantContent: audit.notCompliantContent,
+      derogatedContent: audit.derogatedContent,
+      notInScopeContent: audit.notInScopeContent,
+
+      technologies: audit.technologies,
+      samples: audit.pages,
+      tools: audit.tools,
+      environments: audit.environments
+    };
+
+    return statement;
   }
 
   async updateAuditStatementData(

@@ -4,6 +4,54 @@
 
 <h2 class="fr-sr-only" id="2026">2026</h2>
 
+### 14/04/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Amélioration du redimensionnement des images ([#1440](https://github.com/DISIC/Ara/pull/1440))
+- Plusieurs corrections sur le copier-coller et glisser déposer de contenus – Markdown, HTML, images. ([#1459](https://github.com/DISIC/Ara/pull/1459), [#1467](https://github.com/DISIC/Ara/pull/1467), [#1469](https://github.com/DISIC/Ara/pull/1469), [#1471](https://github.com/DISIC/Ara/pull/1471))
+
+### 25/03/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Pouvoir interchanger le nom de 2 pages dans les paramètres de l'audit ([#1426](https://github.com/DISIC/Ara/pull/1426))
+- Pouvoir afficher du pur markdown sur la page Rapport d'audit accessibilité ([#1446](https://github.com/DISIC/Ara/pull/1446))
+
+### 12/03/2026
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Permettre de redimensionner les images dans la zone de saisie ([#1396](https://github.com/DISIC/Ara/pull/1396))
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Prendre en compte la sémantique md lors du collage de texte dans une zone de saisie ([#1371](https://github.com/DISIC/Ara/pull/1371))
+
+### 11/03/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Dans le rapport dans les onglets « Détail des non-conformités » et « Point d’amélioration », on affiche dynamiquement le lien actif du menu latéral en fonction de la position de l’utilisateur ou l'utilisatrice sur la page, afin d’indiquer la page correspondant au contenu affiché. ([#1419](https://github.com/DISIC/Ara/pull/1419))
+
+### 06/03/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- La mise à jour de l’adresse email d’un compte met également à jour l’adresse email des audits de ce compte ([#1393](https://github.com/DISIC/Ara/pull/1393))
+
+### 05/03/2026
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Ajoute un indicateur sur les onglets de pages lorsqu’elles sont complétées ([#1410](https://github.com/DISIC/Ara/pull/1410))
+
+### 04/03/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Pour un audit terminé, la barre de progression est affichée au lieu de la date de fin ([#1398](https://github.com/DISIC/Ara/pull/1398))
+
 ### 25/02/2026
 
 #### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
