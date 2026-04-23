@@ -18,7 +18,7 @@ web_environment:
   # Les emails envoyés en dev sont interceptés par Mailpit
   - MAILER_USER=dev@example.com
   - MAILER_PASSWORD=changeme
-  - MAILER_SMTP_HOST=mailpit
+  - MAILER_SMTP_HOST=localhost
   - MAILER_SMTP_PORT=1025
   - MAILER_SMTP_SECURE=false
 
@@ -38,3 +38,4 @@ web_environment:
 hooks:
   post-start:
     - exec: "corepack enable && corepack prepare yarn@4.9.2 --activate && yarn install"
+    - exec-host: "echo '>> N oubliez pas de lancer le frontend et la backend : ddev dev-front & ddev dev-back '"

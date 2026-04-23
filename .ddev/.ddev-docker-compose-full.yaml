@@ -79,6 +79,7 @@ services:
       - mode: ingress
         host_ip: 127.0.0.1
         target: 5432
+        published: "0"
         protocol: tcp
     restart: "no"
     stop_grace_period: 1m0s
@@ -171,7 +172,7 @@ services:
       JWT_SECRET: dev-jwt-secret-a-changer-en-production
       LINES: "43"
       MAILER_PASSWORD: changeme
-      MAILER_SMTP_HOST: mailpit
+      MAILER_SMTP_HOST: localhost
       MAILER_SMTP_PORT: "1025"
       MAILER_SMTP_SECURE: "false"
       MAILER_USER: dev@example.com
