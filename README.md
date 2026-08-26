@@ -46,11 +46,12 @@ puis joue les migrations Prisma. Les serveurs backend et frontend sont lancés a
 
 ### Adresses
 
-| Service                          | Adresse                                        |
-| -------------------------------- | ---------------------------------------------- |
-| Application                      | <https://ara.ddev.site>                        |
-| Documentation de l’API (Swagger) | <https://ara.ddev.site/swagger>                |
-| Boîte mail locale (Mailpit)      | `ddev mailpit` ou <https://ara.ddev.site:8026> |
+| Service                          | Adresse                                                                |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| Application                      | <https://ara.ddev.site>                                                |
+| Documentation de l’API (Swagger) | <https://ara.ddev.site/swagger>                                        |
+| Boîte mail locale (Mailpit)      | `ddev mailpit` ou <https://ara.ddev.site:8026>                         |
+| Magasin d’objets (Garage)        | `ddev garage status` — service interne, jamais joint par le navigateur |
 
 Tous les e-mails envoyés par l’application (vérification de compte, réinitialisation de mot de
 passe, changement d’adresse e-mail) sont interceptés par Mailpit : **aucun compte Ethereal n’est
@@ -58,17 +59,18 @@ nécessaire**, et aucun e-mail ne part vers l’extérieur.
 
 ### Commandes utiles
 
-| Commande                    | Effet                                                                              |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `ddev logs -f`              | Suit les logs du backend et du frontend                                            |
-| `ddev dev`                  | Relance les 2 serveurs au premier plan (logs plus lisibles, `Ctrl+C` pour arrêter) |
-| `ddev dev-restart`          | Repasse les 2 serveurs en tâche de fond                                            |
-| `ddev dev-stop`             | Arrête les 2 serveurs                                                              |
-| `ddev migrate`              | Joue les migrations Prisma (`prisma migrate dev`)                                  |
-| `ddev prisma studio`        | Ouvre Prisma Studio                                                                |
-| `ddev psql`                 | Ouvre un shell PostgreSQL                                                          |
-| `ddev exec yarn …`          | Exécute une commande Yarn dans le conteneur                                        |
-| `ddev stop` / `ddev delete` | Arrête / supprime l’environnement                                                  |
+| Commande                      | Effet                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------- |
+| `ddev logs -f`                | Suit les logs du backend et du frontend                                            |
+| `ddev dev`                    | Relance les 2 serveurs au premier plan (logs plus lisibles, `Ctrl+C` pour arrêter) |
+| `ddev dev-restart`            | Repasse les 2 serveurs en tâche de fond                                            |
+| `ddev dev-stop`               | Arrête les 2 serveurs                                                              |
+| `ddev migrate`                | Joue les migrations Prisma (`prisma migrate dev`)                                  |
+| `ddev prisma studio`          | Ouvre Prisma Studio                                                                |
+| `ddev psql`                   | Ouvre un shell PostgreSQL                                                          |
+| `ddev garage bucket info ara` | Inspecte le magasin d’objets (taille, nombre d’objets)                             |
+| `ddev exec yarn …`            | Exécute une commande Yarn dans le conteneur                                        |
+| `ddev stop` / `ddev delete`   | Arrête / supprime l’environnement                                                  |
 
 Les tests Cypress se lancent depuis la machine hôte (`yarn tests:run`) : le port `3000` est exposé
 et les endpoints de debug utilisés par les tests sont activés.
@@ -79,12 +81,10 @@ et les endpoints de debug utilisés par les tests sont activés.
 > `sharp`, moteurs Prisma). Utiliser `ddev exec yarn install` à la place.
 
 > [!NOTE]
-> **Limites connues.** Les variables `S3_*`, `AWS_*` et `GRIST_*` sont renseignées avec des valeurs
-> factices dans `.ddev/config.yaml`. En conséquence, l’**envoi et l’affichage des images**
-> (captures d’écran des critères, pièces jointes des notes) et le **formulaire de retour
-> d’expérience** ne fonctionnent pas en local. Pour les activer, renseigner les vraies valeurs
-> dans `confiture-rest-api/.env` : ce fichier reste pris en compte et ne rentre pas en conflit
-> avec la configuration DDEV.
+> **Limite connue.** Seules les variables `GRIST_*` sont renseignées avec des valeurs factices dans
+> `.ddev/config.yaml` : le **formulaire de retour d’expérience** ne fonctionne donc pas en local.
+> Pour l’activer, renseigner les vraies valeurs dans `confiture-rest-api/.env` : ce fichier reste
+> pris en compte et ne rentre pas en conflit avec la configuration DDEV.
 
 ## Installation
 
