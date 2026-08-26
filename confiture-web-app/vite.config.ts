@@ -8,6 +8,11 @@ const uploadSourceMapsToSentry =
   process.env.SENTRY_AUTH_TOKEN &&
   process.env.VITE_SENTRY_RELEASE;
 
+// Sous DDEV, Vite est derrière le reverse-proxy nginx du conteneur web :
+// il doit écouter sur toutes les interfaces, accepter l'hôte *.ddev.site et
+// annoncer au client HMR le port/protocole vus depuis le navigateur.
+const isDdev = !!process.env.IS_DDEV_PROJECT;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
@@ -38,7 +43,11 @@ export default defineConfig({
       "/uploads": "http://localhost:4000"
     },
     port: 3000,
-    allowedHosts: ["ara.ddev.site"]
+    ...(isDdev && {
+      host: true,
+      allowedHosts: [".ddev.site"],
+      hmr: { protocol: "wss", clientPort: 443 }
+    })
   },
   preview: {
     port: process.env.PORT ? Number(process.env.PORT) : undefined,
