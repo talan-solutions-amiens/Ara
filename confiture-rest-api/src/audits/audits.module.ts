@@ -8,6 +8,7 @@ import { AuditsController } from "./audits.controller";
 import { FileStorageService } from "./file-storage.service";
 import { ReportsController } from "./reports.controller";
 import { StatementsController } from "./statements.controller";
+import { UploadsController } from "./uploads.controller";
 
 @Module({
   providers: [
@@ -16,7 +17,12 @@ import { StatementsController } from "./statements.controller";
     FileStorageService,
     AuditExportService
   ],
-  controllers: [AuditsController, ReportsController, StatementsController],
+  controllers: [
+    AuditsController,
+    ReportsController,
+    StatementsController,
+    UploadsController
+  ],
   imports: [
     MulterModule.register({
       fileFilter(_req, file, callback) {
