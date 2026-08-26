@@ -25,6 +25,67 @@ Les espaces de travail (_workspaces_) sont :
 - Conteneurisation :\
   [Docker](https://www.docker.com)
 
+> [!TIP]
+> Avec [DDEV](https://ddev.com), aucun de ces prérequis n’est nécessaire sur la machine hôte :
+> voir [Développement avec DDEV](#développement-avec-ddev).
+
+## Développement avec DDEV
+
+[DDEV](https://ddev.com) (version 1.24 ou supérieure) fournit un environnement complet et
+reproductible : Node.js, Yarn, PostgreSQL et un **client mail local**
+([Mailpit](https://mailpit.axllent.org/)), sans rien installer d’autre que DDEV et Docker.
+C’est une alternative aux sections [Installation](#installation) et
+[Développement](#développement) ci-dessous.
+
+```sh
+ddev start
+```
+
+Cette unique commande installe les dépendances, génère les fichiers RGAA et les types de l’API,
+puis joue les migrations Prisma. Les serveurs backend et frontend sont lancés automatiquement.
+
+### Adresses
+
+| Service                          | Adresse                                        |
+| -------------------------------- | ---------------------------------------------- |
+| Application                      | <https://ara.ddev.site>                        |
+| Documentation de l’API (Swagger) | <https://ara.ddev.site/swagger>                |
+| Boîte mail locale (Mailpit)      | `ddev mailpit` ou <https://ara.ddev.site:8026> |
+
+Tous les e-mails envoyés par l’application (vérification de compte, réinitialisation de mot de
+passe, changement d’adresse e-mail) sont interceptés par Mailpit : **aucun compte Ethereal n’est
+nécessaire**, et aucun e-mail ne part vers l’extérieur.
+
+### Commandes utiles
+
+| Commande                    | Effet                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `ddev logs -f`              | Suit les logs du backend et du frontend                                            |
+| `ddev dev`                  | Relance les 2 serveurs au premier plan (logs plus lisibles, `Ctrl+C` pour arrêter) |
+| `ddev dev-restart`          | Repasse les 2 serveurs en tâche de fond                                            |
+| `ddev dev-stop`             | Arrête les 2 serveurs                                                              |
+| `ddev migrate`              | Joue les migrations Prisma (`prisma migrate dev`)                                  |
+| `ddev prisma studio`        | Ouvre Prisma Studio                                                                |
+| `ddev psql`                 | Ouvre un shell PostgreSQL                                                          |
+| `ddev exec yarn …`          | Exécute une commande Yarn dans le conteneur                                        |
+| `ddev stop` / `ddev delete` | Arrête / supprime l’environnement                                                  |
+
+Les tests Cypress se lancent depuis la machine hôte (`yarn tests:run`) : le port `3000` est exposé
+et les endpoints de debug utilisés par les tests sont activés.
+
+> [!IMPORTANT]
+> Une fois DDEV utilisé, ne plus lancer `yarn install` sur la machine hôte : `node_modules` est
+> partagé avec le conteneur et certaines dépendances contiennent des binaires natifs (`bcrypt`,
+> `sharp`, moteurs Prisma). Utiliser `ddev exec yarn install` à la place.
+
+> [!NOTE]
+> **Limites connues.** Les variables `S3_*`, `AWS_*` et `GRIST_*` sont renseignées avec des valeurs
+> factices dans `.ddev/config.yaml`. En conséquence, l’**envoi et l’affichage des images**
+> (captures d’écran des critères, pièces jointes des notes) et le **formulaire de retour
+> d’expérience** ne fonctionnent pas en local. Pour les activer, renseigner les vraies valeurs
+> dans `confiture-rest-api/.env` : ce fichier reste pris en compte et ne rentre pas en conflit
+> avec la configuration DDEV.
+
 ## Installation
 
 Une seule commande pour :

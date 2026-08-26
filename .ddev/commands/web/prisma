@@ -1,0 +1,8 @@
+#!/bin/bash
+
+## Description: Exécute la CLI Prisma du backend
+## Usage: prisma [args]
+## Example: "ddev prisma studio" ou "ddev prisma migrate status"
+
+cd /var/www/html
+exec yarn workspace confiture-rest-api run prisma "$@"
