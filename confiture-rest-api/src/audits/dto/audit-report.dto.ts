@@ -22,6 +22,9 @@ export class AuditReportDto {
   statementPublicationDate?: Date;
   statementEditionDate?: Date;
 
+  schemaPluriannuelUrl?: string;
+  planActionUrl?: string;
+
   notCompliantContent?: string;
   derogatedContent?: string;
   notInScopeContent?: string;
@@ -169,20 +172,11 @@ class ReportCriterionResult {
 
   compliantComment: string | null;
 
-  /**
-   * @example "There is an accessibility error there. You should do this and that."
-   */
-  notCompliantComment: string | null;
   exampleImages: ReportExampleImage[];
-  /**
-   * @example "MAJOR"
-   */
-  @ApiProperty({ enum: CriterionResultUserImpact })
-  userImpact: CriterionResultUserImpact | null;
 
   notApplicableComment: string | null;
 
-  quickWin: boolean;
+  notCompliantItems: CriterionResultNotCompliantItem[];
 }
 
 class ReportExampleImage {
@@ -200,4 +194,11 @@ class ReportNotesFile {
   thumbnailKey: string;
   size: number;
   mimetype: string;
+}
+
+class CriterionResultNotCompliantItem {
+  title: string | null;
+  comment: string | null;
+  userImpact: CriterionResultUserImpact | null;
+  quickWin: boolean | null;
 }

@@ -4,6 +4,83 @@
 
 <h2 class="fr-sr-only" id="2026">2026</h2>
 
+### 10/08/2026
+
+#### <span aria-hidden="true">⚙️</span> Autres changements
+
+- Ajout d’une page d’aide pour expliquer comment utiliser l’onglet «&nbsp;Éléments transverses&nbsp;» ([#1561](https://github.com/DISIC/Ara/pull/1561))
+
+### 29/07/2026
+
+#### <span aria-hidden="true">⚙️</span> Autres changements
+
+- Ajouter les actions liées à un audit dans la page "Tableau de bord d'un audit  ([#1557](https://github.com/DISIC/Ara/pull/1557))
+
+### 24/07/2026
+
+#### <span aria-hidden="true">⚙️</span> Autres changements
+
+- Ajouter le placeholder "Entité ayant réalisé l'audit" dans la déclaration ([#1555](https://github.com/DISIC/Ara/pull/1555))
+- Les liens du haut du pied de page s’affichent quelque soit l’état de connexion de l’usager (mais pas dans le rapport) ([#1570](https://github.com/DISIC/Ara/pull/1570))
+
+### 22/07/2026
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Ajouter plusieurs erreurs par critère non conforme ([#1458](https://github.com/DISIC/Ara/pull/1458))
+
+### 16/07/2026
+
+#### <span aria-hidden="true">⚙️</span> Autres changements
+
+- Les audits de comptes supprimés ne sont correctement plus accessibles ([#1552](https://github.com/DISIC/Ara/pull/1552))
+
+### 17/06/2026
+
+#### <span aria-hidden="true">⚙️</span> Autres changements
+
+- Le nom de l’auditeur·ice des audits est mis à jour lorsque celui-ci change dans le profil et le champ "Nom de votre structure" est supprimé du profil ([#1520](https://github.com/DISIC/Ara/pull/1520))
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Permettre d'ajouter les schéma pluriannuel et plans d'actions dans la déclaration d'accessibilité ([#1508](https://github.com/DISIC/Ara/pull/1508))
+
+### 11/06/2026
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Ajout de la fonctionnalité de "Transfert d’audit" pour changer le propriétaire d’un audit ([#1484](https://github.com/DISIC/Ara/pull/1484), [#1487](https://github.com/DISIC/Ara/pull/1487))
+
+### 10/06/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Ajoute la mention "Optionnel" dans l’onglet "Éléments transverses" ([#1523](https://github.com/DISIC/Ara/pull/1523))
+
+#### <span aria-hidden="true">🚀</span> Nouvelles fonctionnalités
+
+- Remplace les zones de texte par des éditeurs riches dans la déclaration d’accessibilité  ([#1500](https://github.com/DISIC/Ara/pull/1500))
+
+### 04/06/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Corrige l’affichage des listes numérotées des tests de méthodologie sur Chrome ([#1522](https://github.com/DISIC/Ara/pull/1522))
+
+### 22/05/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Revoit le feedback du bouton pour copier la déclaration ([#1510](https://github.com/DISIC/Ara/pull/1510))
+- Corrige l’ordre des pages dans l’export CSV ([#1511](https://github.com/DISIC/Ara/pull/1511))
+
+### 20/05/2026
+
+#### <span aria-hidden="true">🐛</span> Corrections
+
+- Corrige l’affichage des images d’en-tête dans les emails sur, entre autres, Gmail ([#1483](https://github.com/DISIC/Ara/pull/1488))
+- Corrigne un bug permettant de modifier la date d’édition d’un audit non terminé ([#1502](https://github.com/DISIC/Ara/pull/1502))
+
 ### 14/04/2026
 
 #### <span aria-hidden="true">🐛</span> Corrections
