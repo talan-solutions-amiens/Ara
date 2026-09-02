@@ -24,11 +24,14 @@ import { DeleteAccountResponseDto } from "./dto/delete-account-response.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { SigninDto } from "./dto/signin.dto";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { IpRestricted } from "./ip-restricted.decorator";
 import { AuthenticationJwtPayload } from "./jwt-payloads";
+
 import { User } from "./user.decorator";
 
 @Controller("auth")
 @ApiTags("Authentication")
+@IpRestricted()
 export class AuthController {
   constructor(
     private readonly auth: AuthService,

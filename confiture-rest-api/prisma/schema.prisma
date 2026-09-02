@@ -59,6 +59,7 @@ model Audit {
   editionDate     DateTime?
   editUniqueId    String     @unique
   consultUniqueId String     @unique
+  reportPassword  String?
   auditTraceId    Int        @unique
   auditTrace      AuditTrace @relation(fields: [auditTraceId], references: [id])
 

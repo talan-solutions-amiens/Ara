@@ -29,8 +29,11 @@ import { CreateAccountDto } from "./dto/create-account.dto";
 import { ResendVerificationEmailDto } from "./dto/resend-verification-email.dto";
 import { VerifyAccountDto } from "./dto/verify-account.dto";
 
+import { IpRestricted } from "./ip-restricted.decorator";
+
 @Controller("auth")
 @ApiTags("Authentication")
+@IpRestricted()
 export class CreateAccountController {
   constructor(
     private readonly auth: AuthService,

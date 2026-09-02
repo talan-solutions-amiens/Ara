@@ -27,6 +27,7 @@ import {
 } from "@nestjs/swagger";
 
 import { AuthRequired } from "../auth/auth-required.decorator";
+import { IpRestricted } from "../auth/ip-restricted.decorator";
 import { AuthenticationJwtPayload } from "../auth/jwt-payloads";
 import { User } from "../auth/user.decorator";
 import { MailService } from "../mail/mail.service";
@@ -45,10 +46,12 @@ import { PatchAuditDto } from "./dto/requests/patch-audit.dto";
 import { TransferAuditDto } from "./dto/requests/transfer-audit.dto";
 import { UpdateAuditDto } from "./dto/requests/update-audit.dto";
 import { UpdateResultsDto } from "./dto/requests/update-results.dto";
+
 import { UploadImageDto } from "./dto/requests/upload-image.dto";
 
 @Controller("audits")
 @ApiTags("Audits")
+@IpRestricted()
 export class AuditsController {
   constructor(
     private readonly auditService: AuditService,
@@ -271,6 +274,20 @@ export class AuditsController {
   @ApiOkResponse({ description: "The audit has been successfully deleted." })
   async deleteAudit(@AuditId() uniqueId: string) {
     await this.auditService.softDeleteAudit(uniqueId);
+  }
+
+  /**
+   * Regenerate the passcode protecting this audit's public report.
+   * Invalidates any previously issued unlock cookie for this report.
+   */
+  @Put("/:uniqueId/report-password")
+  @ApiOkResponse({ description: "A new report password was generated." })
+  async regenerateReportPassword(
+    @AuditId() uniqueId: string
+  ): Promise<{ reportPassword: string }> {
+    const reportPassword =
+      await this.auditService.regenerateReportPassword(uniqueId);
+    return { reportPassword };
   }
 
   /**

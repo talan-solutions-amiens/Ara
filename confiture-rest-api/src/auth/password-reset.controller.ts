@@ -7,8 +7,11 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 
 const SummerBody = Body;
 
+import { IpRestricted } from "./ip-restricted.decorator";
+
 @Controller("auth")
 @ApiTags("Authentication")
+@IpRestricted()
 export class PasswordResetController {
   constructor(
     private readonly auth: AuthService,

@@ -50,6 +50,7 @@ applications:
         DATABASE_SSL: "false"
         # Variables sensibles à définir via `upsun variable:create --sensitive` :
         # JWT_SECRET
+        # ADMIN_IP_ALLOWLIST   (IPs autorisees sur les routes admin/edition, ex: IP_VPN_TALAN_REDACTED)
         # FRONT_BASE_URL            (URL publique du frontend, ex: https://ara.numerique.gouv.fr)
         # MAILER_USER
         # MAILER_PASSWORD

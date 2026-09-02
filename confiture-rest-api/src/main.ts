@@ -6,6 +6,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 import proxy from "express-http-proxy";
 import morgan from "morgan";
 
@@ -35,7 +36,12 @@ function configureSwagger(app: INestApplication) {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Upsun's router sits in front of the app: trust its X-Forwarded-* headers
+  // so req.ip reflects the real client IP (used by the admin IP allowlist).
+  app.set("trust proxy", true);
+
   app.useBodyParser("json", { limit: "500kb" });
+  app.use(cookieParser());
   app.use("/api", morgan(process.env.NODE_ENV !== "production" ? "dev" : "short"));
   app.use("/uploads", proxy(process.env.S3_VIRTUAL_HOST));
 
