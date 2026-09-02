@@ -12,6 +12,9 @@
     "source.organizeImports": "never"
   },
 
+  // Use flat config
+  "eslint.useFlatConfig": true,
+
   // Silent the stylistic rules in you IDE, but still auto fix them
   "eslint.rules.customizations": [
     { "rule": "style/*", "severity": "off", "fixable": true },
@@ -52,4 +55,5 @@
     "postcss"
   ],
   "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
 }

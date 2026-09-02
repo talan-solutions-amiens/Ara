@@ -1,14 +1,17 @@
-import ky from "ky";
 import { has, sample, setWith, unset } from "lodash-es";
 import { defineStore } from "pinia";
+import { api } from "../api";
 
 import { CRITERIA_BY_AUDIT_TYPE, LINKED_CRITERIA } from "../criteria";
 import {
   AuditType,
+  CreateNotCompliantItemData,
   CriterionResultUserImpact,
   CriteriumResult,
   CriteriumResultStatus,
-  ExampleImageFile
+  ExampleImageFile,
+  NotCompliantItem,
+  UpdateNotCompliantItemData
 } from "../types";
 import { useAuditStore } from "./audit";
 import { useFiltersStore } from "./filters";
@@ -69,6 +72,9 @@ interface ResultsStoreState {
   lastRequestFailed: boolean;
 
   lastUpdatedTopic: number;
+
+  // FIXME: refactor the way all requests are done
+  abortController: AbortController | null;
 }
 
 export const useResultsStore = defineStore("results", {
@@ -81,7 +87,8 @@ export const useResultsStore = defineStore("results", {
       currentRequestCount: 0,
       lastRequestSuccessEnd: null,
       lastRequestFailed: false,
-      lastUpdatedTopic: 1
+      lastUpdatedTopic: 1,
+      abortController: null
     };
   },
 
@@ -208,7 +215,7 @@ export const useResultsStore = defineStore("results", {
 
   actions: {
     async fetchResults(uniqueId: string) {
-      const response = (await ky
+      const response = (await api
         .get(`/api/audits/${uniqueId}/results`, {
           // large audits can take a while to fetch on slow connections
           timeout: 15_000
@@ -289,7 +296,7 @@ export const useResultsStore = defineStore("results", {
 
       this.increaseCurrentRequestCount();
 
-      await ky
+      await api
         .patch(`/api/audits/${uniqueId}/results`, {
           json: {
             data: updates
@@ -455,7 +462,7 @@ export const useResultsStore = defineStore("results", {
 
       this.increaseCurrentRequestCount();
 
-      const exampleImage = (await ky
+      const exampleImage = (await api
         .post(`/api/audits/${uniqueId}/results/examples`, {
           body: formData
         })
@@ -480,7 +487,7 @@ export const useResultsStore = defineStore("results", {
     ) {
       this.increaseCurrentRequestCount();
 
-      await ky
+      await api
         .delete(`/api/audits/${uniqueId}/results/examples/${exampleId}`)
         .finally(() => {
           this.decreaseCurrentRequestCount();
@@ -543,13 +550,99 @@ export const useResultsStore = defineStore("results", {
             CriteriumResultStatus.NOT_APPLICABLE
           ])!,
           compliantComment: sample(["Commentaire conforme", "Rien"])!,
-          notCompliantComment: sample(["Commentaire non conforme", "Rien"])!,
           notApplicableComment: sample(["Commentaire non-applicable", "Rien"])!,
-          userImpact: sample(CriterionResultUserImpact)!
+          notCompliantItems: [
+            {
+              title: sample(["Titre non conforme", "Pas de titre"])!,
+              comment: sample(["Commentaire non conforme", "Rien"])!,
+              userImpact: sample(CriterionResultUserImpact)!,
+              quickWin: false
+            } as NotCompliantItem
+          ]
         })) ?? [];
 
       await this.updateResults(uniqueId, updates);
       await auditStore.publishAudit(uniqueId);
+    },
+
+    async createNotCompliantItem(
+      uniqueId: string,
+      // FIXME: pageId is required to update store after request
+      pageId: number,
+      slug: string,
+      topic: number,
+      criterium: number,
+      notCompliantItem: CreateNotCompliantItemData | null = null
+    ): Promise<NotCompliantItem> {
+      const createdItem = await api
+        .post(`/api/audits/${uniqueId}/pages/${slug}/results/${topic}.${criterium}/not-compliant-items`, {
+          ...(notCompliantItem && { json: notCompliantItem })
+        })
+        .json<NotCompliantItem>();
+
+      // update result in store
+      this.data?.[pageId][topic][criterium].notCompliantItems.push(createdItem);
+
+      return createdItem;
+    },
+
+    async updateNotCompliantItem(
+      uniqueId: string,
+      // FIXME: pageId is required to update store after request
+      pageId: number,
+      slug: string,
+      topic: number,
+      criterium: number,
+      notCompliantItemId: number,
+      notCompliantItem: UpdateNotCompliantItemData
+    ): Promise<NotCompliantItem | void> {
+      this.increaseCurrentRequestCount();
+
+      const updatedItem = await api
+        .patch(`/api/audits/${uniqueId}/pages/${slug}/results/${topic}.${criterium}/not-compliant-items/${notCompliantItemId}`, {
+          json: notCompliantItem,
+          signal: this.abortController?.signal
+        }).json<NotCompliantItem>().catch((error) => {
+          if (error.name === "AbortError") {
+            return;
+          }
+        }).finally(() => {
+          this.decreaseCurrentRequestCount();
+        });
+
+      if (updatedItem) {
+      // update result in store
+        const idx = this.data?.[pageId][topic][criterium].notCompliantItems.findIndex(item => item.id === notCompliantItemId) ?? -1;
+        if (idx !== -1) {
+          this.data?.[pageId][topic][criterium].notCompliantItems.splice(idx, 1, updatedItem);
+        }
+      }
+
+      return updatedItem;
+    },
+
+    async deleteNotCompliantItem(
+      uniqueId: string,
+      // FIXME: pageId is required to update store after request
+      pageId: number,
+      slug: string,
+      topic: number,
+      criterium: number,
+      notCompliantItemId: number
+    ): Promise<void> {
+      await api
+        .delete(`/api/audits/${uniqueId}/pages/${slug}/results/${topic}.${criterium}/not-compliant-items/${notCompliantItemId}`);
+
+      // update result in store
+      const idx = this.data?.[pageId][topic][criterium].notCompliantItems.findIndex(item => item.id === notCompliantItemId) ?? -1;
+      if (idx !== -1) {
+        this.data?.[pageId][topic][criterium].notCompliantItems.splice(idx, 1);
+      }
+    },
+
+    abortRequest() {
+      this.abortController?.abort();
+      this.abortController = new AbortController();
     }
   }
 });

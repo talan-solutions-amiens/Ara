@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Editor, EditorContent, useEditor } from "@tiptap/vue-3";
-import hljs from "highlight.js";
-import { computed, onMounted, ref, ShallowRef } from "vue";
+import { computed, ref, ShallowRef } from "vue";
 
-import { tiptapRenderedExtensions } from "./tiptap-extensions";
+import { getTipTapRenderedExtensions } from "./tiptap-extensions";
 
 const props = defineProps<{
   document: string;
+  basicMode?: boolean;
 }>();
 
 const parsedDocument = computed(() => {
@@ -28,16 +28,10 @@ const editor = useEditor({
   },
   editable: false,
   content: parsedDocument.value,
-  extensions: tiptapRenderedExtensions
+  extensions: getTipTapRenderedExtensions(props.basicMode)
 }) as ShallowRef<Editor>;
 
 const contentRef = ref<HTMLDivElement>();
-
-onMounted(() => {
-  contentRef.value?.querySelectorAll("pre code").forEach((el) => {
-    hljs.highlightElement(el as HTMLElement);
-  });
-});
 </script>
 
 <template>

@@ -29,26 +29,29 @@ model Audit {
   transverseElementsPageId Int           @unique
   auditorName              String?
   auditorEmail             String?
+  auditor                  User?         @relation(fields: [auditorEmail], references: [username])
   showAuditorEmailInReport Boolean       @default(false)
   transverseElements       String[]
 
   // A11y declaration edition step
-  initiator           String?
-  auditorOrganisation String?
-  procedureUrl        String?
-  contactName         String?
-  contactEmail        String?
-  contactFormUrl      String?
-  technologies        String[]
-  tools               String[]
-  environments        TestEnvironment[]
-  notCompliantContent String?
-  derogatedContent    String?
-  notInScopeContent   String?
-  notes               String?
-  notesFiles          NotesFile[]
+  initiator                String?
+  auditorOrganisation      String?
+  procedureUrl             String?
+  contactName              String?
+  contactEmail             String?
+  contactFormUrl           String?
+  technologies             String[]
+  tools                    String[]
+  environments             TestEnvironment[]
+  notCompliantContent      String?
+  derogatedContent         String?
+  notInScopeContent        String?
+  notes                    String?
+  notesFiles               NotesFile[]
   statementPublicationDate DateTime?
-  statementEditionDate DateTime?
+  statementEditionDate     DateTime?
+  schemaPluriannuelUrl     String?
+  planActionUrl            String?
 
   // Misc
   creationDate    DateTime?
@@ -110,10 +113,10 @@ model CriterionResult {
 
   compliantComment String?
 
-  notCompliantComment String?                    @map("errorDescription")
-  userImpact          CriterionResultUserImpact?
-  exampleImages       ExampleImageFile[]
-  quickWin            Boolean                    @default(false)
+  notCompliantComment String?                    @map("errorDescription") @ignore
+  userImpact          CriterionResultUserImpact?                          @ignore
+  exampleImages       ExampleImageFile[]                                  
+  quickWin            Boolean                    @default(false)          @ignore
 
   notApplicableComment String?
 
@@ -124,7 +127,22 @@ model CriterionResult {
   pageId Int
   page   AuditedPage @relation(fields: [pageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  notCompliantItems NotCompliantItem[]
+
   @@unique([pageId, topic, criterium])
+}
+
+model NotCompliantItem {
+    id Int @id @default(autoincrement())
+
+    title String?
+    comment String?
+    userImpact          CriterionResultUserImpact?
+    quickWin            Boolean                     @default(false)      
+
+    criterionResultId Int
+    criterionResult   CriterionResult @relation(fields: [criterionResultId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
 }
 
 enum CriterionResultStatus {
@@ -204,6 +222,7 @@ enum EmailType {
   EMAIL_UPDATE_VERIFICATION
   EMAIL_UPDATE_CONFIRMATION
   PASSWORD_RESET_REQUEST
+  AUDIT_TRANSFER
 }
 
 model EmailLog {
@@ -221,17 +240,18 @@ model User {
   id  Int    @id @default(autoincrement())
   uid String @unique @default(uuid())
 
-  username String @unique
-  password String
+  username String  @unique
+  password String?
 
   isVerified      Boolean @default(false)
   verificationJti String?
 
   name    String?
-  orgName String?
 
   newEmail                String?
   newEmailVerificationJti String?
+
+  audits Audit[]
 }
 
 model ActiveFeedbackToken {

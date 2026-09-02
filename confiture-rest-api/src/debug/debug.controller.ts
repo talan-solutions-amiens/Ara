@@ -1,6 +1,9 @@
-import { Body, Controller, Post } from "@nestjs/common";
-import { ApiCreatedResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Post, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { nanoid } from "nanoid";
+import { AuthenticationJwtPayload } from "src/auth/jwt-payloads";
+import { User } from "src/auth/user.decorator";
 import { CRITERIA } from "../audits/criteria";
 import { AuditDto } from "../audits/dto/entities/audit.dto";
 import { AUDIT_PRISMA_SELECT } from "../audits/prisma-selects";
@@ -15,8 +18,19 @@ import { CreateDebugAuditDto } from "./create-debug-audit.dto";
 @ApiTags("Debug")
 export class DebugController {
   constructor(
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService
   ) {}
+
+  @Get("is-dev-mode-allowed")
+  @ApiOkResponse({
+    description: "Display dev mode switch or not",
+    type: Boolean
+  })
+  async isDevModeAllowed(): Promise<boolean> {
+    const isProd = this.config.get("NODE_ENV") === "production" && this.config.get("IS_REVIEW_APP") !== "true";
+    return !isProd;
+  }
 
   @Post("create-audit")
   @ApiCreatedResponse({
@@ -24,18 +38,29 @@ export class DebugController {
     type: AuditDto
   })
   async createAudit(
-    @Body() body: CreateDebugAuditDto
+    @Body() body: CreateDebugAuditDto,
+    @User() user: AuthenticationJwtPayload
   ): Promise<AuditDto> {
     const editUniqueId = nanoid();
     const reportUniqueId = nanoid();
+
+    // Only allow admins to use route on production
+    const adminAccounts = this.config.get("ADMIN_ACCOUNTS");
+    const adminUsers = adminAccounts ? adminAccounts.split(",") : [];
+    const userIsNotAuthorized = this.config.get("NODE_ENV") === "production" && this.config.get("IS_REVIEW_APP") !== "true" && adminUsers && (!user || !adminUsers.includes(user.email));
+    if (userIsNotAuthorized) {
+      throw new UnauthorizedException();
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
       const audit = await tx.audit.create({
         data: {
           editUniqueId: editUniqueId,
           consultUniqueId: reportUniqueId,
-          creationDate: new Date(),
-          publicationDate: body.isComplete ? new Date() : null,
+          creationDate: body.isComplete && body.publicationDate ? new Date(body.publicationDate) : new Date(),
+          publicationDate: body.isComplete ?
+              (body.publicationDate ? new Date(body.publicationDate) : new Date())
+            : null,
           auditTrace: {
             create: {
               auditConsultUniqueId: editUniqueId,
@@ -44,7 +69,12 @@ export class DebugController {
           },
           auditType: body.auditType,
           procedureName: body.procedureName,
-          auditorEmail: body.auditorEmail,
+          auditor: {
+            connectOrCreate: {
+              where: { username: body.auditorEmail.toLowerCase() },
+              create: { username: body.auditorEmail.toLowerCase() }
+            }
+          },
           auditorName: "Étienne Durand",
           transverseElementsPage: {
             create: {
@@ -98,29 +128,43 @@ export class DebugController {
 
       if (!body.isPristine) {
         await Promise.all(
-          [audit.transverseElementsPage, ...audit.pages].map(async (p) =>
-            tx.criterionResult.createMany({
-              data: CRITERIA.map((c, i) => ({
-                status: [
-                  CriterionResultStatus.COMPLIANT,
-                  CriterionResultStatus.NOT_APPLICABLE,
-                  CriterionResultStatus.NOT_COMPLIANT
-                ][i % 3],
-                notCompliantComment: "Une erreur ici",
-                notApplicableComment: "Attention quand même si ça devient applicable",
-                compliantComment: "Peut mieux faire",
-                quickWin: i % 7 === 0,
-                userImpact: [
-                  CriterionResultUserImpact.MINOR,
-                  CriterionResultUserImpact.MAJOR,
-                  CriterionResultUserImpact.BLOCKING,
-                  null
-                ][i % 4],
-                topic: c.topic,
-                criterium: c.criterium,
-                pageId: p.id
-              }))
+          [audit.transverseElementsPage, ...audit.pages].flatMap((p) =>
+            CRITERIA.map((c, i) => {
+              const status = [
+                CriterionResultStatus.COMPLIANT,
+                CriterionResultStatus.NOT_APPLICABLE,
+                CriterionResultStatus.NOT_COMPLIANT
+              ][i % 3];
+
+              return tx.criterionResult.create({
+                data: {
+                  status,
+                  notApplicableComment: status === CriterionResultStatus.NOT_APPLICABLE
+                    ? "Attention quand même si ça devient applicable"
+                    : null,
+                  compliantComment: status === CriterionResultStatus.COMPLIANT ? "Peut mieux faire" : null,
+                  notCompliantItems: status === CriterionResultStatus.NOT_COMPLIANT
+                    ? {
+                        create: {
+                          title: `Titre de l’erreur`,
+                          comment: `Une erreur ici`,
+                          quickWin: i % 7 === 0,
+                          userImpact: [
+                            CriterionResultUserImpact.MINOR,
+                            CriterionResultUserImpact.MAJOR,
+                            CriterionResultUserImpact.BLOCKING,
+                            null
+                          ][i % 4]
+                        }
+                      }
+                    : undefined,
+                  topic: c.topic,
+                  criterium: c.criterium,
+                  pageId: p.id
+                }
+              });
             })
+
           )
         );
       }
