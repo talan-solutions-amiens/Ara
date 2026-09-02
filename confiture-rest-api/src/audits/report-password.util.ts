@@ -1,0 +1,117 @@
+import { randomInt } from "node:crypto";
+
+/**
+ * Small list of short, unambiguous French words (no accents, no
+ * homophones) used to build a password that is easy to read out loud
+ * or copy-paste, e.g. "renard-tulipe-42".
+ */
+const REPORT_PASSWORD_WORDS = [
+  "abricot",
+  "acacia",
+  "agile",
+  "arbre",
+  "avocat",
+  "bambou",
+  "banane",
+  "bateau",
+  "bison",
+  "bouleau",
+  "cactus",
+  "canard",
+  "carotte",
+  "cedre",
+  "cerise",
+  "chene",
+  "citron",
+  "corail",
+  "coyote",
+  "dauphin",
+  "eclair",
+  "ecureuil",
+  "epinard",
+  "erable",
+  "fenouil",
+  "figuier",
+  "flamant",
+  "foret",
+  "fusee",
+  "galet",
+  "grenat",
+  "guepard",
+  "hibou",
+  "iguane",
+  "jasmin",
+  "koala",
+  "lagon",
+  "lapin",
+  "lavande",
+  "lezard",
+  "lierre",
+  "lilas",
+  "loutre",
+  "lynx",
+  "mangue",
+  "marmotte",
+  "menthe",
+  "meteore",
+  "mimosa",
+  "morse",
+  "mouette",
+  "myrtille",
+  "nenuphar",
+  "olive",
+  "opale",
+  "orage",
+  "orchidee",
+  "orque",
+  "ortie",
+  "otarie",
+  "panda",
+  "papaye",
+  "pecan",
+  "pelican",
+  "perle",
+  "phoque",
+  "pivoine",
+  "platane",
+  "poivron",
+  "pompon",
+  "prairie",
+  "prune",
+  "puma",
+  "quartz",
+  "radis",
+  "renard",
+  "requin",
+  "rivage",
+  "roseau",
+  "sable",
+  "safran",
+  "saphir",
+  "sapin",
+  "saule",
+  "sequoia",
+  "souris",
+  "sureau",
+  "tigre",
+  "tilleul",
+  "tomate",
+  "toucan",
+  "tulipe",
+  "vanille",
+  "vison",
+  "zebre"
+];
+
+/**
+ * Generate a random, readable password meant to be shared with a client
+ * so they can view an audit's public report (e.g. "renard-tulipe-42").
+ * Not meant to protect highly sensitive data: it's a share-link passcode,
+ * not an account password.
+ */
+export function generateReportPassword(): string {
+  const wordA = REPORT_PASSWORD_WORDS[randomInt(REPORT_PASSWORD_WORDS.length)];
+  const wordB = REPORT_PASSWORD_WORDS[randomInt(REPORT_PASSWORD_WORDS.length)];
+  const number = randomInt(10, 100);
+  return `${wordA}-${wordB}-${number}`;
+}

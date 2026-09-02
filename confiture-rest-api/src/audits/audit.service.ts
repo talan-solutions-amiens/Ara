@@ -2,9 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { PrismaPromise } from "@prisma/client/runtime/client";
 import _, { intersectionBy, isEqual, omit, orderBy, partition, pick, setWith, sortBy, uniqBy } from "lodash";
 import { nanoid } from "nanoid";
-import sharp from "sharp";
 
+import sharp from "sharp";
 import { AuthService } from "../auth/auth.service";
+
 import {
   Audit,
   AuditType,
@@ -30,6 +31,7 @@ import { UpdateResultsDto } from "./dto/requests/update-results.dto";
 import { UpdateStatementDto } from "./dto/requests/update-statement.dto";
 import { FileStorageService } from "./file-storage.service";
 import { AUDIT_PRISMA_SELECT } from "./prisma-selects";
+import { generateReportPassword } from "./report-password.util";
 
 const AUDIT_EDIT_INCLUDE = {
   environments: true,
@@ -92,6 +94,7 @@ export class AuditService {
       data: {
         editUniqueId,
         consultUniqueId,
+        reportPassword: generateReportPassword(),
 
         creationDate: new Date(),
 
@@ -1043,6 +1046,40 @@ export class AuditService {
     }
   }
 
+  /**
+   * Returns the reportPassword set for an audit, given its consult unique id.
+   * Used to gate access to the public report behind a passcode shared with
+   * the client. Returns undefined if the audit doesn't exist.
+   */
+  async getReportPasswordByConsultId(
+    consultUniqueId: string
+  ): Promise<string | null | undefined> {
+    const audit = await this.prisma.audit.findUnique({
+      where: { consultUniqueId },
+      select: { reportPassword: true }
+    });
+    return audit?.reportPassword;
+  }
+
+  /**
+   * Regenerates the report password for an audit, given its edit unique id.
+   * Returns the new password, or undefined if the audit doesn't exist.
+   */
+  async regenerateReportPassword(
+    editUniqueId: string
+  ): Promise<string | undefined> {
+    const newPassword = generateReportPassword();
+    try {
+      await this.prisma.audit.update({
+        where: { editUniqueId },
+        data: { reportPassword: newPassword }
+      });
+    } catch {
+      return undefined;
+    }
+    return newPassword;
+  }
+
   async publishAudit(uniqueId: string) {
     try {
       const [audit, auditIsComplete] = await Promise.all([
@@ -1661,6 +1698,7 @@ export class AuditService {
           "sourceAuditId",
           "transverseElementsPageId",
           "auditorEmail",
+          "reportPassword",
 
           // reset statement fields
           "procedureUrl",
@@ -1695,6 +1733,7 @@ export class AuditService {
 
         editUniqueId: duplicateEditUniqueId,
         consultUniqueId: duplicateConsultUniqueId,
+        reportPassword: generateReportPassword(),
 
         procedureName: newAuditName,
 

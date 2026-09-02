@@ -44,6 +44,7 @@ export interface Audit {
   id: number;
   editUniqueId: string;
   consultUniqueId: string;
+  reportPassword: string | null;
 
   creationDate: string | null;
   publicationDate: string | null;

@@ -1,13 +1,16 @@
 import { Body, Controller, Patch, UnauthorizedException } from "@nestjs/common";
 import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { AuthRequired } from "../auth/auth-required.decorator";
+import { IpRestricted } from "../auth/ip-restricted.decorator";
 import { AuthenticationJwtPayload } from "../auth/jwt-payloads";
 import { User } from "../auth/user.decorator";
 import { PatchProfileDto } from "./patch-profile.dto";
+
 import { ProfileService } from "./profile.service";
 
 @Controller("profile")
 @ApiTags("User Profile")
+@IpRestricted()
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

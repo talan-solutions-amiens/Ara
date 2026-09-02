@@ -29,5 +29,10 @@ export const configValidationSchema = Joi.object({
     .required(),
   AWS_ACCESS_KEY_ID: Joi.string().required(),
   AWS_SECRET_ACCESS_KEY: Joi.string().required(),
-  JWT_SECRET: Joi.string().required()
+  JWT_SECRET: Joi.string().required(),
+
+  // Comma-separated list of IPs allowed to access admin/edit routes
+  // (audit creation & management, login, account, profile). Leave unset
+  // to disable the restriction (e.g. local dev).
+  ADMIN_IP_ALLOWLIST: Joi.string().allow("").optional()
 });

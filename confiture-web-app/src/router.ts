@@ -5,6 +5,7 @@ import {
   RouteLocationNormalized
 } from "vue-router";
 
+import { api } from "./api";
 import AraTabsPanel from "./components/audit/AraTabsPanel.vue";
 import { FirstTab } from "./enums";
 import AccountDashboardPage from "./pages/account/AccountDashboardPage.vue";
@@ -32,6 +33,7 @@ import PrivacyPage from "./pages/misc/PrivacyPage.vue";
 import SiteMapPage from "./pages/misc/SiteMapPage.vue";
 import TransverseDocPage from "./pages/misc/TransverseDocPage.vue";
 import ReportPage from "./pages/report/ReportPage.vue";
+import ReportPasswordPage from "./pages/report/ReportPasswordPage.vue";
 import RoadmapPage from "./pages/RoadmapPage.vue";
 import StatementPage from "./pages/StatementPage.vue";
 import TiptapPage from "./pages/TiptapPage.vue";
@@ -289,6 +291,19 @@ const router = createRouter({
       meta: {
         name: "Rapport d’audit",
         intendedFor: "audited-entity",
+        hideHomeLink: true,
+        reportAccessCheck: true
+      },
+      props: true
+    },
+    // Report password gate
+    {
+      path: "/rapport/:uniqueId/protege",
+      name: "report-password",
+      component: ReportPasswordPage,
+      meta: {
+        name: "Mot de passe requis",
+        intendedFor: "audited-entity",
         hideHomeLink: true
       },
       props: true
@@ -300,7 +315,8 @@ const router = createRouter({
       component: StatementPage,
       meta: {
         name: "Déclaration d’accessibilité",
-        intendedFor: "audited-entity"
+        intendedFor: "audited-entity",
+        reportAccessCheck: true
       }
     },
     // Roadmap
@@ -385,10 +401,30 @@ const router = createRouter({
   }
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const accountStore = useAccountStore();
   if (to.meta.authRequired && !accountStore.account) {
     return { name: "login" };
+  }
+
+  if (to.meta.reportAccessCheck && to.name !== "report-password") {
+    const consultUniqueId = to.params.uniqueId as string;
+    try {
+      const { locked } = await api
+        .get(`/api/reports/${consultUniqueId}/lock-status`)
+        .json<{ locked: boolean }>();
+
+      if (locked) {
+        return {
+          name: "report-password",
+          params: { uniqueId: consultUniqueId },
+          query: { redirect: to.fullPath }
+        };
+      }
+    } catch {
+      // The audit doesn't exist / was deleted: let the page's own data
+      // fetching handle the 404/410 error as usual.
+    }
   }
 });
 

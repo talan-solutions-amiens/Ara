@@ -15,9 +15,12 @@ import DsfrFieldWithValidation from "../validation/DsfrFieldWithValidation.vue";
 import FormWithValidation from "../validation/form-with-validation/FormWithValidation.vue";
 import AuditTypeRadio from "./AuditTypeRadio.vue";
 import PagesSample from "./PagesSample.vue";
+import ReportPasswordManager from "./ReportPasswordManager.vue";
 
 const props = defineProps<{
   audit: CreateAuditRequestData;
+  editUniqueId?: string;
+  reportPassword?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -171,6 +174,12 @@ const currentProcedureName = procedureName.value;
         Ajouter une page
       </button>
     </div>
+
+    <ReportPasswordManager
+      v-if="editUniqueId"
+      :edit-unique-id="editUniqueId"
+      :report-password="reportPassword ?? null"
+    />
 
     <fieldset
       v-if="!(accountStore.account || audit.auditor?.isVerified)"

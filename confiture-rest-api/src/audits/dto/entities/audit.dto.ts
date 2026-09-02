@@ -14,6 +14,7 @@ export class AuditDto {
   id: number;
   editUniqueId: string;
   consultUniqueId: string;
+  reportPassword: string | null;
 
   @ApiProperty({ enum: AuditType })
   auditType: AuditType;
