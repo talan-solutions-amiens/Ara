@@ -1,29 +1,34 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaClientKnownRequestError } from "src/generated/prisma/internal/prismaNamespace";
+import { PrismaClientKnownRequestError } from "../generated/prisma/internal/prismaNamespace";
 
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "../prisma.service";
 import { PatchProfileDto } from "./patch-profile.dto";
 
 @Injectable()
 export class ProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getUserProfile(userEmail: string) {
-    return this.prisma.user.findUnique({
-      where: { username: userEmail },
-      select: { id: true, username: true, name: true, orgName: true }
-    });
-  }
-
   async patchProfile(userEmail: string, body: PatchProfileDto) {
     try {
-      const user = await this.prisma.user.update({
-        where: { username: userEmail },
-        data: { name: body.name, orgName: body.orgName },
-        select: { id: true, username: true, name: true, orgName: true }
-      });
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { username: userEmail },
+          data: { name: body.name },
+          select: { id: true, username: true, name: true }
+        });
 
-      return user;
+        // Update user audits auditorName
+        await tx.audit.updateMany({
+          where: {
+            auditorEmail: userEmail
+          },
+          data: {
+            auditorName: body.name
+          }
+        });
+
+        return user;
+      });
     } catch (e) {
       // User does not exist
       // https://www.prisma.io/docs/orm/reference/error-reference#p2025
