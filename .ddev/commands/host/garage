@@ -1,0 +1,17 @@
+#!/bin/bash
+
+## Description: Exécute la CLI Garage sur le magasin d'objets local
+## Usage: garage [args]
+## Example: "ddev garage status" ou "ddev garage bucket info ara"
+
+CONTAINER="ddev-${DDEV_SITENAME}-garage"
+
+if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+  echo "Le conteneur $CONTAINER ne tourne pas. Lancer 'ddev start'." >&2
+  exit 1
+fi
+
+if [ -t 0 ] && [ -t 1 ]; then
+  exec docker exec -it "$CONTAINER" /garage -c /etc/garage.toml "$@"
+fi
+exec docker exec -i "$CONTAINER" /garage -c /etc/garage.toml "$@"
