@@ -29,6 +29,7 @@ export const AUDIT_PRISMA_SELECT: Prisma.AuditSelect = {
   id: true,
   editUniqueId: true,
   consultUniqueId: true,
+  reportPassword: true,
 
   auditType: true,
   procedureName: true,
