@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import { PrismaPromise } from "@prisma/client/runtime/client";
 import _, { intersectionBy, isEqual, omit, orderBy, partition, pick, setWith, sortBy, uniqBy } from "lodash";
 import { nanoid } from "nanoid";
 import sharp from "sharp";
+
+import { AuthService } from "../auth/auth.service";
 import {
   Audit,
   AuditType,
@@ -10,7 +13,6 @@ import {
   CriterionResultUserImpact,
   Prisma
 } from "../generated/prisma/client";
-
 import { PrismaService } from "../prisma.service";
 import * as RGAA from "../rgaa.json";
 import { slugify } from "../utils";
@@ -76,8 +78,9 @@ const hasNamesAreIdenticalButReordered = (currentAuditPages: { name: string; ord
 export class AuditService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly fileStorageService: FileStorageService
-  ) {}
+    private readonly fileStorageService: FileStorageService,
+    private readonly authService: AuthService
+  ) { }
 
   async createAudit(data: CreateAuditDto): Promise<AuditDto> {
     const editUniqueId = nanoid();
@@ -96,7 +99,16 @@ export class AuditService {
 
         auditType: data.auditType,
 
-        auditorEmail: data.auditorEmail,
+        auditor: {
+          connectOrCreate: {
+            create: {
+              username: data.auditorEmail.toLowerCase()
+            },
+            where: {
+              username: data.auditorEmail.toLowerCase()
+            }
+          }
+        },
         auditorName: data.auditorName,
 
         transverseElementsPage: {
@@ -172,7 +184,7 @@ export class AuditService {
     const existingSlugs = new Set<string>([TRANSVERSE_ELEMENTS_SLUG]);
     const pagesWithSlug = pages.map(page => {
       let slug = slugify(page.name);
-      for (let i = 1; ;i++) {
+      for (let i = 1; ; i++) {
         if (!existingSlugs.has(slug)) {
           break;
         }
@@ -184,41 +196,25 @@ export class AuditService {
     return pagesWithSlug;
   }
 
-  findAuditWithEditUniqueId(uniqueId: string, include?: Prisma.AuditInclude) {
+  /**
+   * @param editUniqueId id of the audit to look for
+   * @param isHidden look for hidden audits, default: false
+   * @returns true if the audit exists in db, false otherwise
+   */
+  async checkIfAuditExists(editUniqueId: string, isHidden: boolean = false): Promise<boolean> {
+    const audit = await this.prisma.audit.findFirst({
+      where: { editUniqueId, isHidden },
+      select: { id: true }
+    });
+
+    return !!audit;
+  }
+
+  /** Find and return an audit in the format that the API would return */
+  findAudit(uniqueId: string): Promise<AuditDto> {
     return this.prisma.audit.findFirst({
       where: { editUniqueId: uniqueId, isHidden: false },
-      include
-    });
-  }
-
-  getAuditWithEditUniqueId(uniqueId: string) {
-    return this.prisma.audit.findUnique({
-      where: { editUniqueId: uniqueId },
-      include: {
-        environments: true,
-        pages: true,
-        sourceAudit: {
-          select: {
-            procedureName: true
-          }
-        },
-        notesFiles: true
-      }
-    });
-  }
-
-  getAuditWithConsultUniqueId(uniqueId: string) {
-    return this.prisma.audit.findUnique({
-      where: { consultUniqueId: uniqueId },
-      include: {
-        environments: true,
-        pages: true,
-        sourceAudit: {
-          select: {
-            procedureName: true
-          }
-        }
-      }
+      select: AUDIT_PRISMA_SELECT
     });
   }
 
@@ -248,8 +244,10 @@ export class AuditService {
           }
         },
         include: {
-          exampleImages: true
+          exampleImages: true,
+          notCompliantItems: true
         }
+
       }),
       this.prisma.criterionResult.findMany({
         where: {
@@ -260,7 +258,8 @@ export class AuditService {
           }
         },
         include: {
-          exampleImages: true
+          exampleImages: true,
+          notCompliantItems: true
         }
       })
     ]);
@@ -293,17 +292,18 @@ export class AuditService {
       );
 
       // return real result
-      if (existingResult) return existingResult;
+      if (existingResult) {
+        return existingResult;
+      }
 
       // return placeholder result
       return {
         status: CriterionResultStatus.NOT_TESTED,
         compliantComment: null,
-        notCompliantComment: null,
-        userImpact: null,
         notApplicableComment: null,
         exampleImages: [],
-        quickWin: false,
+
+        notCompliantItems: [],
 
         topic: criterion.topic,
         criterium: criterion.criterium,
@@ -343,8 +343,6 @@ export class AuditService {
             select: {
               status: true,
               compliantComment: true,
-              notCompliantComment: true,
-              userImpact: true,
               notApplicableComment: true,
               exampleImages: {
                 select: {
@@ -356,8 +354,15 @@ export class AuditService {
                   thumbnailKey: true
                 }
               },
-              quickWin: true,
-
+              notCompliantItems: {
+                select: {
+                  id: true,
+                  title: true,
+                  comment: true,
+                  userImpact: true,
+                  quickWin: true
+                }
+              },
               topic: true,
               criterium: true,
               pageId: true
@@ -410,6 +415,12 @@ export class AuditService {
         }
       }
 
+      // Reset org when changing email from unverified to verified user.
+      const shouldResetOrganisation =
+        data.auditorEmail !== previousAudit.auditorEmail
+        && !(await this.authService.isAccountVerified(previousAudit.auditorEmail))
+        && await this.authService.isAccountVerified(data.auditorEmail);
+
       const audit = await this.prisma.audit.update({
         where: { editUniqueId: uniqueId },
         data: {
@@ -418,9 +429,14 @@ export class AuditService {
 
           initiator: data.initiator,
 
-          auditorEmail: data.auditorEmail,
+          auditor: {
+            connectOrCreate: {
+              create: { username: data.auditorEmail.toLowerCase() },
+              where: { username: data.auditorEmail.toLowerCase() }
+            }
+          },
           auditorName: data.auditorName,
-          auditorOrganisation: data.auditorOrganisation,
+          auditorOrganisation: shouldResetOrganisation ? null : data.auditorOrganisation,
 
           contactName: data.contactName,
           contactEmail: data.contactEmail,
@@ -557,9 +573,13 @@ export class AuditService {
     data: PatchAuditDto
   ): Promise<Audit | undefined> {
     try {
-      const audit = await this.prisma.audit.update({
+      let audit = await this.prisma.audit.findUnique({ where: { editUniqueId: uniqueId } });
+      audit = await this.prisma.audit.update({
         where: { editUniqueId: uniqueId },
-        data: { notes: data.notes, editionDate: new Date() }
+        data: {
+          notes: data.notes,
+          ...(audit.publicationDate && { editionDate: new Date() })
+        }
       });
 
       return audit;
@@ -579,6 +599,69 @@ export class AuditService {
   async updateResults(uniqueId: string, body: UpdateResultsDto) {
     const promises = body.data
       .map((item) => {
+        const result: PrismaPromise<any>[] = [];
+
+        const newNotCompliantItems = item.notCompliantItems?.filter((x) => !x.id) ?? [];
+
+        const existingNotCompliantItems = item.notCompliantItems
+          .filter((x) => x.id);
+
+        const notCompliantItemsToDelete = this.prisma.notCompliantItem.deleteMany({
+          where: {
+            id: {
+              notIn: existingNotCompliantItems.map((x) => x.id)
+            },
+            criterionResult: {
+              criterium: item.criterium,
+              topic: item.topic,
+              pageId: item.pageId,
+              page: {
+                OR: [
+                  {
+                    auditUniqueId: uniqueId
+                  },
+                  {
+                    auditTransverse: {
+                      editUniqueId: uniqueId
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        });
+
+        result.push(notCompliantItemsToDelete);
+
+        const notCompliantItemsToUpdate = existingNotCompliantItems
+          .map((notCompliantItem) => {
+            return this.prisma.notCompliantItem.update({
+              where: {
+                id: notCompliantItem.id,
+                criterionResult: {
+                  criterium: item.criterium,
+                  topic: item.topic,
+                  pageId: item.pageId,
+                  page: {
+                    OR: [
+                      {
+                        auditUniqueId: uniqueId
+                      },
+                      {
+                        auditTransverse: {
+                          editUniqueId: uniqueId
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              data: omit(notCompliantItem, ["id"])
+            });
+          });
+
+        result.push(...notCompliantItemsToUpdate);
+
         const data: Prisma.CriterionResultUpsertArgs["create"] = {
           criterium: item.criterium,
           topic: item.topic,
@@ -587,16 +670,19 @@ export class AuditService {
               id: item.pageId
             }
           },
-
           status: item.status,
           compliantComment: item.compliantComment,
-          notCompliantComment: item.notCompliantComment,
           notApplicableComment: item.notApplicableComment,
-          userImpact: item.userImpact,
-          quickWin: item.quickWin
+          notCompliantItems: newNotCompliantItems.length > 0
+            ? {
+                createMany: {
+                  data: newNotCompliantItems
+                }
+              }
+            : undefined
         };
 
-        const result = [
+        result.push(
           this.prisma.criterionResult.upsert({
             where: {
               pageId_topic_criterium: {
@@ -608,7 +694,7 @@ export class AuditService {
             create: data,
             update: data
           })
-        ];
+        );
 
         return result;
       })
@@ -899,7 +985,7 @@ export class AuditService {
   }
 
   /**
-   * Mark an audit as deleted and remove auditor informations. Its data will be not be deleted.
+   * Mark an audit as deleted and remove auditor informations. Its data will not be deleted.
    * @returns True if an audit was deleted, false otherwise.
    */
   async softDeleteAudit(uniqueId: string): Promise<boolean> {
@@ -959,6 +1045,27 @@ export class AuditService {
 
   async publishAudit(uniqueId: string) {
     try {
+      const [audit, auditIsComplete] = await Promise.all([
+        this.prisma.audit.findUnique({
+          where: {
+            editUniqueId: uniqueId
+          },
+          select: {
+            publicationDate: true
+          }
+        }),
+        this.isAuditComplete(uniqueId)
+      ]);
+
+      if (audit?.publicationDate && auditIsComplete) {
+        return this.prisma.audit.findUnique({
+          where: {
+            editUniqueId: uniqueId
+          },
+          select: AUDIT_PRISMA_SELECT
+        });
+      }
+
       return await this.prisma.audit.update({
         where: {
           editUniqueId: uniqueId
@@ -966,7 +1073,7 @@ export class AuditService {
         data: {
           publicationDate: new Date()
         },
-        include: AUDIT_EDIT_INCLUDE
+        select: AUDIT_PRISMA_SELECT
       });
     } catch (e) {
       if (
@@ -980,16 +1087,37 @@ export class AuditService {
   }
 
   /**
+   * Erase an audit publicationDate & editionDate, only if the audit is no longer marked
+   * as completed after having been completed or
    * Update an audit editionDate, only when it has a publication date.
    * @returns the update audit if it is updated, undefined otherwise
    */
-  private async updateAuditEditDate(uniqueId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { editUniqueId: uniqueId }, select: { publicationDate: true } });
+  async updateAuditEditDate(uniqueId: string) {
+    const [audit, auditIsComplete] = await Promise.all([
+      this.prisma.audit.findUnique({
+        where: {
+          editUniqueId: uniqueId
+        },
+        select: {
+          publicationDate: true
+        }
+      }),
+      this.isAuditComplete(uniqueId)
+    ]);
+
+    if (audit.publicationDate && !auditIsComplete) {
+      return this.prisma.audit.update({
+        where: { editUniqueId: uniqueId },
+        data: { publicationDate: null, editionDate: null },
+        select: AUDIT_PRISMA_SELECT
+      });
+    }
+
     if (audit.publicationDate) {
       return this.prisma.audit.update({
         where: { editUniqueId: uniqueId },
         data: { editionDate: new Date() },
-        include: AUDIT_EDIT_INCLUDE
+        select: AUDIT_PRISMA_SELECT
       });
     }
   }
@@ -1006,7 +1134,7 @@ export class AuditService {
       data: audit.statementPublicationDate
         ? { statementEditionDate: new Date() }
         : { statementPublicationDate: new Date() },
-      include: AUDIT_EDIT_INCLUDE
+      select: AUDIT_PRISMA_SELECT
     });
   }
 
@@ -1056,6 +1184,8 @@ export class AuditService {
       updateDate: audit.editionDate,
       statementPublicationDate: audit.statementPublicationDate,
       statementEditionDate: audit.statementEditionDate,
+      schemaPluriannuelUrl: audit.schemaPluriannuelUrl,
+      planActionUrl: audit.planActionUrl,
 
       notCompliantContent: audit.notCompliantContent,
       derogatedContent: audit.derogatedContent,
@@ -1077,7 +1207,7 @@ export class AuditService {
           results.filter(
             (r) =>
               r.status === CriterionResultStatus.NOT_COMPLIANT &&
-              r.userImpact === CriterionResultUserImpact.BLOCKING
+              r.notCompliantItems.some(x => x.userImpact === CriterionResultUserImpact.BLOCKING)
           ),
           (r) => `${r.topic}.${r.criterium}`
         ).length,
@@ -1225,15 +1355,14 @@ export class AuditService {
         status: r.status,
 
         compliantComment: r.compliantComment,
-        notCompliantComment: r.notCompliantComment,
         notApplicableComment: r.notApplicableComment,
-        userImpact: r.userImpact,
-        quickWin: r.quickWin,
+
         exampleImages: r.exampleImages.map((img) => ({
           filename: img.originalFilename,
           key: img.key,
           thumbnailKey: img.thumbnailKey
-        }))
+        })),
+        notCompliantItems: r.notCompliantItems
       })),
 
       transverseElements: audit.transverseElements
@@ -1252,7 +1381,8 @@ export class AuditService {
           OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
         },
         include: {
-          exampleImages: true
+          exampleImages: true,
+          notCompliantItems: true
         }
       }),
       this.prisma.criterionResult.findMany({
@@ -1261,7 +1391,8 @@ export class AuditService {
           OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
         },
         include: {
-          exampleImages: true
+          exampleImages: true,
+          notCompliantItems: true
         }
       })
     ]).then(results => results.flat());
@@ -1330,8 +1461,11 @@ export class AuditService {
   }
 
   async isAuditComplete(uniqueId: string): Promise<boolean> {
-    const audit = await this.findAuditWithEditUniqueId(uniqueId, {
-      pages: true
+    const audit = await this.prisma.audit.findUnique({
+      where: { editUniqueId: uniqueId },
+      include: {
+        pages: true
+      }
     });
 
     const testedCount = await this.prisma.criterionResult.count({
@@ -1339,15 +1473,10 @@ export class AuditService {
         page: {
           auditUniqueId: uniqueId
         },
-        criterium: {
-          in: CRITERIA_BY_AUDIT_TYPE[audit.auditType].map((c) => c.criterium)
-        },
-        topic: {
-          in: CRITERIA_BY_AUDIT_TYPE[audit.auditType].map((c) => c.topic)
-        },
         status: {
           not: CriterionResultStatus.NOT_TESTED
-        }
+        },
+        OR: CRITERIA_BY_AUDIT_TYPE[audit.auditType]
       }
     });
 
@@ -1366,7 +1495,17 @@ export class AuditService {
           include: {
             results: {
               include: {
-                exampleImages: true
+                exampleImages: true,
+                notCompliantItems: {
+                  select: {
+                    id: false,
+                    comment: true,
+                    quickWin: true,
+                    title: true,
+                    userImpact: true,
+                    criterionResultId: false
+                  }
+                }
               }
             }
           }
@@ -1375,7 +1514,17 @@ export class AuditService {
           include: {
             results: {
               include: {
-                exampleImages: true
+                exampleImages: true,
+                notCompliantItems: {
+                  select: {
+                    id: false,
+                    comment: true,
+                    quickWin: true,
+                    title: true,
+                    userImpact: true,
+                    criterionResultId: false
+                  }
+                }
               }
             }
           }
@@ -1511,6 +1660,7 @@ export class AuditService {
           "auditTraceId",
           "sourceAuditId",
           "transverseElementsPageId",
+          "auditorEmail",
 
           // reset statement fields
           "procedureUrl",
@@ -1526,6 +1676,15 @@ export class AuditService {
           "derogatedContent",
           "notInScopeContent"
         ]),
+
+        ...(originalAudit.auditorEmail && {
+          auditor: {
+            connect: {
+              // FIXME: shouldnt the new audit be under the user who duplicated the audit ?
+              username: originalAudit.auditorEmail.toLowerCase()
+            }
+          }
+        }),
 
         // link new audit with the original
         sourceAudit: {
@@ -1566,6 +1725,10 @@ export class AuditService {
                         r.id
                       ][e.id]
                   )
+
+                },
+                notCompliantItems: {
+                  create: r.notCompliantItems.map((item) => ({ ...omit(item, ["id"]) }))
                 }
               }))
             }
@@ -1585,6 +1748,9 @@ export class AuditService {
                   create: r.exampleImages.map(
                     (e) => imagesCreateData[p.id][r.id][e.id]
                   )
+                },
+                notCompliantItems: {
+                  create: r.notCompliantItems.map((item) => ({ ...omit(item, ["id"]) }))
                 }
               }))
             }
@@ -1608,15 +1774,16 @@ export class AuditService {
     return newAudit;
   }
 
-  async anonymiseAudits(userEmail: string) {
+  async softDeleteAuditsByAuditorEmail(userEmail: string) {
     await this.prisma.audit.updateMany({
       where: {
         auditorEmail: userEmail
       },
       data: {
+        isHidden: true,
         auditorEmail: null,
         auditorName: null,
-        showAuditorEmailInReport: false
+        auditorOrganisation: null
       }
     });
   }
@@ -1798,7 +1965,10 @@ export class AuditService {
       technologies: audit.technologies,
       samples: audit.pages,
       tools: audit.tools,
-      environments: audit.environments
+      environments: audit.environments,
+
+      schemaPluriannuelUrl: audit.schemaPluriannuelUrl,
+      planActionUrl: audit.planActionUrl
     };
 
     return statement;
@@ -1861,7 +2031,9 @@ export class AuditService {
         },
         notCompliantContent: data.notCompliantContent,
         derogatedContent: data.derogatedContent,
-        notInScopeContent: data.notInScopeContent
+        notInScopeContent: data.notInScopeContent,
+        schemaPluriannuelUrl: data.schemaPluriannuelUrl ?? null,
+        planActionUrl: data.planActionUrl ?? null
       },
       select: AUDIT_PRISMA_SELECT
     });
@@ -1869,5 +2041,67 @@ export class AuditService {
     const audit = await this.updateStatementDate(editUniqueId);
 
     return audit;
+  }
+
+  /**
+   * Transfer an audit ownership to another user and link it to its account (if any)
+   */
+  async transferAudit(uniqueId: string, newEmail: string) {
+    // Get original audit email
+    const { auditorEmail: originalAuditEmail } = await this.prisma.audit.findUnique({
+      where: { editUniqueId: uniqueId },
+      select: { auditorEmail: true }
+    });
+
+    // Get new owner info
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username: newEmail
+      },
+      select: {
+        name: true
+      }
+    });
+
+    // Update audit with new owner info if any or reset fields
+    const updatedAudit = await this.prisma.audit.update({
+      where: { editUniqueId: uniqueId },
+      data: {
+        auditorOrganisation: null,
+        auditorName: user?.name ?? null,
+        auditor: {
+          connectOrCreate: {
+            where: { username: newEmail },
+            create: {
+              username: newEmail
+            }
+          }
+        }
+      },
+      select: AUDIT_PRISMA_SELECT
+    });
+
+    return {
+      originalAuditEmail,
+      updatedAudit
+    };
+  }
+
+  /**
+   * User can transfer an audit if:
+   * - audit email is not verified
+   * - audit email is verified and user is owner
+   */
+  async canUserTransferAudit(uniqueId: string, userEmail?: string) {
+    const { auditor } = await this.prisma.audit.findUnique({
+      where: {
+        editUniqueId: uniqueId
+      },
+      select: {
+        auditor: true
+      }
+    });
+
+    return !auditor.isVerified || auditor.username === userEmail;
   }
 }

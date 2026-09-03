@@ -5,6 +5,11 @@ import { NotesFileDto } from "./notes-file.dto";
 import { PageDto } from "./page.dto";
 import { TestEnvironmentDto } from "./test-environment.dto";
 
+class AuditorDto {
+  username: string;
+  isVerified: boolean;
+}
+
 export class AuditDto {
   id: number;
   editUniqueId: string;
@@ -32,9 +37,12 @@ export class AuditDto {
   creationDate: Date | null;
   publicationDate: Date | null;
   editionDate: Date | null;
+  schemaPluriannuelUrl: string | null;
+  planActionUrl: string | null;
 
   transverseElementsPage: PageDto;
   environments: TestEnvironmentDto[];
   notesFiles: NotesFileDto[];
   pages: PageDto[];
+  auditor: AuditorDto | null;
 }

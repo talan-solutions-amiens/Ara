@@ -119,3 +119,8 @@ from DSFR links with `target="_blank"` */
 .fr-callout__text a {
   font-size: inherit !important;
 }
+
+mark {
+  background-color: var(--yellow-tournesol-850-200);
+  color: inherit;
+}

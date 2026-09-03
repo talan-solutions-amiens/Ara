@@ -74,8 +74,17 @@ export interface Audit {
   notesFiles: NotesFile[];
   statementPublicationDate: string | null;
   statementEditionDate: string | null;
+  schemaPluriannuelUrl: string | null;
+  planActionUrl: string | null;
 
   transverseElements: string[];
+
+  auditor: Auditor;
+}
+
+interface Auditor {
+  username: string;
+  isVerified: boolean;
 }
 
 /** Audit type fields needed to create an audit */
@@ -86,6 +95,7 @@ export interface CreateAuditRequestData {
   pageElements?: PageElements;
   auditorEmail: string;
   auditorName: string | null;
+  auditor?: Auditor;
 }
 
 /** Creation data type plus step 2 fields. */
@@ -117,8 +127,26 @@ export type NotesFile = components["schemas"]["NotesFileDto"];
 /** Image file attached to specific criterium result when not compliant. */
 export type ExampleImageFile = components["schemas"]["ExampleImageFileDto"];
 
+export type NotCompliantItem = {
+  id: number;
+  title?: string;
+  comment: string | null;
+  userImpact: CriterionResultUserImpact | null;
+  quickWin: boolean;
+};
+
+export type CreateNotCompliantItemData = paths["/audits/{uniqueId}/pages/{slug}/results/{topic}.{criterium}/not-compliant-items"]["post"]["requestBody"]["content"]["application/json"];
+
+export type UpdateNotCompliantItemData = paths["/audits/{uniqueId}/pages/{slug}/results/{topic}.{criterium}/not-compliant-items/{itemId}"]["patch"]["requestBody"]["content"]["application/json"];
+
+export type PatchNotCompliantItemData = { id: number } & Partial<
+  Omit<NotCompliantItem, "id">
+>;
+
 export interface CriteriumResult {
   // ID
+  id: number;
+
   topic: number;
   criterium: number;
   pageId: number;
@@ -127,11 +155,9 @@ export interface CriteriumResult {
   status: CriteriumResultStatus;
 
   compliantComment: string | null;
-  notCompliantComment: string | null;
-  userImpact: CriterionResultUserImpact | null;
   notApplicableComment: string | null;
   exampleImages: ExampleImageFile[];
-  quickWin: boolean;
+  notCompliantItems: NotCompliantItem[];
 }
 
 export enum StoreName {
@@ -153,6 +179,7 @@ export type ScrollPosition = Awaited<ScrollBehaviorResult>;
  */
 export interface TabData {
   label: string;
+  diplayLabelSuffix?: string;
   hiddenLabelSuffix?: string;
   id?: number;
   icon?: string;
