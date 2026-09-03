@@ -36,7 +36,6 @@
     "class-validator": "^0.13.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
-    "express-http-proxy": "^2.0.0",
     "got": "^11.8.5",
     "handlebars": "^4.7.7",
     "joi": "^17.6.0",

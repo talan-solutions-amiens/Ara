@@ -12,6 +12,7 @@ import { NotCompliantItemsController } from "./not-compliant-items/not-compliant
 import { NotCompliantItemsService } from "./not-compliant-items/not-compliant-items.service";
 import { ReportsController } from "./reports.controller";
 import { StatementsController } from "./statements.controller";
+import { UploadsController } from "./uploads.controller";
 
 @Module({
   providers: [
@@ -22,7 +23,13 @@ import { StatementsController } from "./statements.controller";
     AuditExportService,
     AuditExistsPipe
   ],
-  controllers: [AuditsController, ReportsController, StatementsController, NotCompliantItemsController],
+  controllers: [
+    AuditsController,
+    ReportsController,
+    StatementsController,
+    NotCompliantItemsController,
+    UploadsController
+  ],
   imports: [
     MulterModule.register({
       fileFilter(_req, file, callback) {

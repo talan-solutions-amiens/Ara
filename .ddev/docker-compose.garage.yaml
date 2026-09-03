@@ -1,0 +1,43 @@
+# Magasin d'objets S3 pour le développement local.
+#
+# Garage reste un service interne : l'application y accède par
+# http://garage:3900 depuis le conteneur web, jamais depuis le navigateur.
+# C'est volontairement la même topologie qu'en production.
+
+services:
+  garage:
+    container_name: ddev-${DDEV_SITENAME}-garage
+    image: dxflrs/garage:v2.3.0
+    restart: "no"
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: $DDEV_APPROOT
+    environment:
+      # Exposition par le routeur : pratique pour inspecter le magasin
+      # (aws-cli, curl…), l'application ne s'en sert pas.
+      - VIRTUAL_HOST=$DDEV_HOSTNAME
+      - HTTP_EXPOSE=3900:3900
+      - HTTPS_EXPOSE=3910:3900
+      # --default-bucket crée le bucket et la clé d'accès au premier démarrage
+      - GARAGE_DEFAULT_BUCKET=ara
+      - GARAGE_DEFAULT_ACCESS_KEY=ara-local-access-key
+      - GARAGE_DEFAULT_SECRET_KEY=ara-local-secret-key
+      - RUST_LOG=garage=warn
+    entrypoint: ["/garage"]
+    command: ["server", "--single-node", "--default-bucket"]
+    volumes:
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+      - "./garage/garage.toml:/etc/garage.toml"
+    healthcheck:
+      test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  garage-meta:
+    name: "ddev-${DDEV_SITENAME}-garage-meta"
+  garage-data:
+    name: "ddev-${DDEV_SITENAME}-garage-data"

@@ -1,6 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   CopyObjectCommand
@@ -16,6 +17,9 @@ export class FileStorageService {
     this.s3Client = new S3Client({
       region: config.get("S3_REGION"),
       endpoint: config.get("S3_ENDPOINT"),
+      // Les magasins auto-hébergés (Garage) n'ont pas de DNS *.bucket :
+      // le nom du bucket doit passer par le chemin, pas par le nom d'hôte.
+      forcePathStyle: true,
       credentials: {
         accessKeyId: config.get("AWS_ACCESS_KEY_ID"),
         secretAccessKey: config.get("AWS_SECRET_ACCESS_KEY")
@@ -27,15 +31,23 @@ export class FileStorageService {
     const command = new PutObjectCommand({
       Bucket: this.config.get<string>("S3_BUCKET"),
       Key: key,
-      ACL: "public-read",
       Body: buffer,
       ContentType: contentType
     });
     await this.s3Client.send(command);
   }
 
-  getPublicUrl(key: string): string {
-    return `${this.config.get("FRONT_BASE_URL")}/${key}}`;
+  /**
+   * Reads a stored file. The bucket is private: only the backend can read it,
+   * and it is served to clients by `UploadsController`.
+   */
+  async getFile(key: string) {
+    const command = new GetObjectCommand({
+      Bucket: this.config.get<string>("S3_BUCKET"),
+      Key: key
+    });
+
+    return await this.s3Client.send(command);
   }
 
   async deleteStoredFile(key: string) {
@@ -70,8 +82,7 @@ export class FileStorageService {
               CopySource: encodeURIComponent(
                 `/${this.config.get<string>("S3_BUCKET")}/${d.originalKey}`
               ),
-              Key: d.destinationKey,
-              ACL: "public-read"
+              Key: d.destinationKey
             })
         )
         .map((command) => this.s3Client.send(command))

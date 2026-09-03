@@ -1,0 +1,23 @@
+# Configuration Garage pour le développement local uniquement.
+# En production, ces valeurs viennent du dépôt GitOps.
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+# Un seul nœud en local : aucune réplication.
+replication_factor = 1
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+# Secret RPC de développement : sans valeur en dehors de ce conteneur.
+rpc_secret = "41229c53f26d152798ce7370eb131507ce96f6a994201cc1950c6d88336ec5e4"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+# Adressage path-style uniquement : pas de DNS wildcard en local.
+root_domain = ".s3.garage.localhost"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "ara-local-admin-token"
