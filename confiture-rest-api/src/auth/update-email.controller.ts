@@ -22,11 +22,14 @@ import {
 } from "./auth.service";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import { VerifyEmailUpdateDto } from "./dto/verify-email-update.dto";
+import { IpRestricted } from "./ip-restricted.decorator";
 import { AuthenticationJwtPayload } from "./jwt-payloads";
+
 import { User } from "./user.decorator";
 
 @Controller("auth")
 @ApiTags("Authentication")
+@IpRestricted()
 export class UpdateEmailController {
   constructor(
     private readonly auth: AuthService,

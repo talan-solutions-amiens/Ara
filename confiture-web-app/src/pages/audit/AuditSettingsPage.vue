@@ -124,6 +124,8 @@ function submitSettings(data: {
     v-if="auditStore.currentAudit"
     ref="settingsFormRef"
     :audit="auditStore.currentAudit"
+    :edit-unique-id="auditUniqueId"
+    :report-password="auditStore.currentAudit.reportPassword"
     @submit="submitSettings"
     @change="isPristine = false"
   />
