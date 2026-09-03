@@ -3,11 +3,10 @@
 import "./instruments";
 
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { INestApplication, RequestMethod, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
-import proxy from "express-http-proxy";
 import morgan from "morgan";
 
 import { AppModule } from "./app.module";
@@ -43,9 +42,12 @@ async function bootstrap() {
   app.useBodyParser("json", { limit: "500kb" });
   app.use(cookieParser());
   app.use("/api", morgan(process.env.NODE_ENV !== "production" ? "dev" : "short"));
-  app.use("/uploads", proxy(process.env.S3_VIRTUAL_HOST));
 
-  app.setGlobalPrefix("/api");
+  // "/uploads" reste hors du préfixe global : les contenus de l'éditeur
+  // enregistrés en base référencent les images par <img src="/uploads/…">.
+  app.setGlobalPrefix("/api", {
+    exclude: [{ path: "uploads/*", method: RequestMethod.GET }]
+  });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   configureSwagger(app);
