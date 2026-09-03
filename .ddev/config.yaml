@@ -46,17 +46,18 @@ web_environment:
   - MAILER_SMTP_SECURE=false
   - MAILER_USER=ara@ddev.site
   - MAILER_PASSWORD=ddev
-  # Valeurs factices : elles satisfont la validation Joi du backend, mais les
-  # services correspondants (upload S3, feedback Grist) ne fonctionnent pas en local.
+  # Magasin d'objets Garage (voir .ddev/docker-compose.garage.yaml).
+  # Service interne : jamais joint depuis le navigateur.
+  - S3_ENDPOINT=http://garage:3900
+  - S3_REGION=garage
+  - S3_BUCKET=ara
+  - AWS_ACCESS_KEY_ID=ara-local-access-key
+  - AWS_SECRET_ACCESS_KEY=ara-local-secret-key
+  # Valeurs factices : le formulaire de retour d'expérience (Grist) reste
+  # non fonctionnel en local, faute d'identifiants.
   - GRIST_API_KEY=ddev
   - GRIST_DOC_ID=ddev
   - GRIST_TABLE_ID=ddev
-  - S3_ENDPOINT=https://s3.ddev.invalid
-  - S3_VIRTUAL_HOST=https://s3.ddev.invalid
-  - S3_REGION=eu-west-3
-  - S3_BUCKET=ara-local
-  - AWS_ACCESS_KEY_ID=ddev
-  - AWS_SECRET_ACCESS_KEY=ddev
   # Permet à Node de faire confiance au CA mkcert de DDEV
   - NODE_EXTRA_CA_CERTS=/mnt/ddev-global-cache/mkcert/rootCA.pem
 

@@ -19,14 +19,13 @@ export const configValidationSchema = Joi.object({
   GRIST_DOC_ID: Joi.string().required(),
   GRIST_TABLE_ID: Joi.string().required(),
 
+  // "http" est autorisé : en interne le magasin d'objets est joint sans TLS
+  // (service de cluster ou conteneur local), il n'est jamais exposé au public.
   S3_ENDPOINT: Joi.string()
-    .uri({ scheme: ["https"] })
+    .uri({ scheme: ["http", "https"] })
     .required(),
   S3_REGION: Joi.string().required(),
   S3_BUCKET: Joi.string().required(),
-  S3_VIRTUAL_HOST: Joi.string()
-    .uri({ scheme: ["https"] })
-    .required(),
   AWS_ACCESS_KEY_ID: Joi.string().required(),
   AWS_SECRET_ACCESS_KEY: Joi.string().required(),
   JWT_SECRET: Joi.string().required(),
