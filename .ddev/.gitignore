@@ -1,5 +1,0 @@
-# Fichier de configuration locale (surcharge config.yaml avec valeurs réelles)
-config.local.yaml
-
-# Secrets et caches DDEV
-.ddev-generated

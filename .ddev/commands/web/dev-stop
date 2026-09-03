@@ -1,0 +1,11 @@
+#!/bin/bash
+
+## Description: Arrête les serveurs back + front lancés en tâche de fond
+## Usage: dev-stop
+## Example: "ddev dev-stop"
+
+supervisorctl stop 'webextradaemons:*'
+fuser -k -TERM 3000/tcp 4000/tcp >/dev/null 2>&1
+pkill -f "@nestjs/cli/bin/nest.js" >/dev/null 2>&1
+pkill -f "vite/bin/vite.js" >/dev/null 2>&1
+exit 0

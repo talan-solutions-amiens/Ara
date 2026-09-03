@@ -1,0 +1,13 @@
+#!/bin/bash
+
+## Description: (Re)démarre les serveurs back + front en tâche de fond
+## Usage: dev-restart
+## Example: "ddev dev-restart"
+
+supervisorctl stop 'webextradaemons:*' >/dev/null 2>&1
+# Libère les ports si un "ddev dev" a laissé des processus derrière lui
+fuser -k -TERM 3000/tcp 4000/tcp >/dev/null 2>&1
+pkill -f "@nestjs/cli/bin/nest.js" >/dev/null 2>&1
+pkill -f "vite/bin/vite.js" >/dev/null 2>&1
+sleep 1
+supervisorctl start 'webextradaemons:*'
