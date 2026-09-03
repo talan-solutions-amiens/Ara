@@ -259,4 +259,8 @@ export default antfu({
       projectService: null
     }
   }
+}, {
+  // DDEV réécrit tout ce dossier à chaque `ddev start` (sauf les quelques
+  // fichiers qu'on maintient) : rien n'y est à notre main, ne pas le linter.
+  ignores: [".ddev/**"]
 });
