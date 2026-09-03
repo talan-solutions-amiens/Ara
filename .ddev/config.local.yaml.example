@@ -10,10 +10,12 @@ web_environment:
   - GRIST_TABLE_ID=<votre-table-id>
 
   # S3 / stockage fichiers
+  # Inutile en temps normal : DDEV lance un Garage local (voir
+  # .ddev/docker-compose.garage.yaml). À ne renseigner que pour viser un
+  # magasin d'objets distant.
   - S3_ENDPOINT=https://<votre-endpoint>
   - S3_REGION=<votre-region>
   - S3_BUCKET=<votre-bucket>
-  - S3_VIRTUAL_HOST=https://<votre-virtual-host>
   - AWS_ACCESS_KEY_ID=<votre-access-key>
   - AWS_SECRET_ACCESS_KEY=<votre-secret-key>
 
