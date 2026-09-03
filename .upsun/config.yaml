@@ -16,6 +16,10 @@ applications:
         set -eux
         corepack prepare yarn@4.9.2 --activate
         corepack yarn install --immutable
+        # Genere le client Prisma + les types partages (confiture-api.ts) :
+        # plus fait automatiquement par un postinstall depuis que DISIC est
+        # passe a scripts/build.sh (voir CUSTOMISATIONS_TALAN.md)
+        corepack yarn copytypes
         corepack yarn workspace confiture-rest-api run build
 
       deploy: |
@@ -83,6 +87,9 @@ applications:
         set -eux
         corepack prepare yarn@4.9.2 --activate
         corepack yarn install --immutable
+        # Genere le client Prisma + les types partages (confiture-api.ts),
+        # necessaires au typecheck du front (voir CUSTOMISATIONS_TALAN.md)
+        corepack yarn copytypes
         corepack yarn workspace confiture-web-app run build
 
     web:

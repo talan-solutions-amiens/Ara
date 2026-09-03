@@ -124,6 +124,47 @@ mêmes zones)** :
 **Statut** : testé en local (ddev) de bout en bout, en attente de MR/merge
 et de déploiement.
 
+## Fix build Upsun cassé par le passage de DISIC à scripts/build.sh
+
+**Date** : 2026-09-03
+
+**Pourquoi** : après le merge de sync/disic-upstream + feature/ddev +
+feature/report-password-ip-restriction dans `main`, les deux builds Upsun
+(`api` et `frontend`) échouaient avec ~125 erreurs `Cannot find module
+'../generated/prisma/client'`. Cause : DISIC a remplacé son ancien
+`postinstall` (`yarn copytypes && yarn workspace confiture-web-app run
+generate:rgaa`, qui générait implicitement le client Prisma à chaque `yarn
+install`) par un script explicite `scripts/build.sh` (nouveau, orchestre
+tout : copytypes, RGAA, build de tous les workspaces, puis déplace
+`confiture-web-app/dist` dans `confiture-rest-api/client`). Nos hooks
+Upsun appelaient encore juste `yarn install --immutable` puis le build de
+chaque workspace, sans jamais déclencher `prisma generate`.
+
+**Fix** : ajout de `corepack yarn copytypes` (génère le client Prisma +
+`confiture-api.ts`) dans les deux hooks `build` de `.upsun/config.yaml`,
+avant le build de chaque workspace. Ne nécessite pas de connexion DB
+(`prisma generate` n'a besoin que du schéma).
+
+**⚠️ Point d'architecture à surveiller** : DISIC déploie désormais en
+**un seul process** — `ServeStaticModule` sert le frontend buildé
+(`confiture-rest-api/client`) directement depuis l'API NestJS
+(`Procfile`: `web: node confiture-rest-api/dist/main.js`), plus de split
+front/back séparé. Notre `.upsun/config.yaml` garde volontairement les
+**deux apps séparées** (`api` + `frontend`) — ça fonctionne avec le fix
+ci-dessus, mais on divergera un peu plus à chaque sync DISIC tant qu'on
+n'aura pas décidé si on migre vers leur modèle à un seul process
+(plus simple à maintenir en sync, mais plus gros chantier de migration
+Upsun) ou si on garde le split (plus proche de notre historique, mais
+il faudra re-vérifier ce genre de script à chaque gros sync).
+
+**Fichiers modifiés** :
+
+- `.upsun/config.yaml` — ajout de `corepack yarn copytypes` aux 2 hooks
+  `build`
+
+**Statut** : corrigé et testé en local (ddev, build à partir d'un état
+propre). En attente de commit/push/déploiement.
+
 ---
 
 ## Template pour une nouvelle entrée
