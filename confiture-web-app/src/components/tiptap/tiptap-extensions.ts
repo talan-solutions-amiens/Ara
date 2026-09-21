@@ -11,6 +11,7 @@ import ts from "highlight.js/lib/languages/typescript";
 import html from "highlight.js/lib/languages/xml";
 import { common, createLowlight } from "lowlight";
 import { AraTiptapRenderedExtension } from "./AraTiptapRenderedExtension";
+import { CodeShortcutExtension } from "./extensions/CodeShortcutExtension";
 import { ExtendedLinkExtension, LinkExtension } from "./extensions/LinkExtension";
 import { MarkdownExtension } from "./extensions/MarkdownExtension";
 import { getStarterKitExtensions } from "./extensions/StarterKitExtensions";
@@ -113,6 +114,7 @@ export function getTiptapEditorExtensions(options?: {
   return [
     ...commonExtensions,
     PasteMarkdownExtension,
+    CodeShortcutExtension,
     LinkExtension,
     Image.extend({
       addAttributes() {
