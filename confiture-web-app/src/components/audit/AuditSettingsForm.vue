@@ -6,7 +6,7 @@ import { usePreviousRoute } from "../../composables/usePreviousRoute";
 import { EMAIL, REQUIRED } from "../../composables/validation";
 import router from "../../router";
 import { useAccountStore } from "../../store/account";
-import { AuditPage, AuditType, CreateAuditRequestData } from "../../types";
+import { Audit, AuditPage, AuditType, UpdateAuditRequestData } from "../../types";
 import { formatEmail } from "../../utils";
 import BackLink from "../ui/BackLink.vue";
 import DsfrField from "../ui/DsfrField.vue";
@@ -18,7 +18,7 @@ import PagesSample from "./PagesSample.vue";
 import ReportPasswordManager from "./ReportPasswordManager.vue";
 
 const props = defineProps<{
-  audit: CreateAuditRequestData;
+  audit: Audit;
   editUniqueId?: string;
   reportPassword?: string | null;
 }>();
@@ -71,7 +71,7 @@ const accountStore = useAccountStore();
 
 const auditType = ref(props.audit?.auditType);
 const procedureName = ref(props.audit?.procedureName || "");
-const pages = ref(structuredClone(toRaw(props.audit?.pages)));
+const pages = ref<UpdateAuditRequestData["pages"]>(structuredClone(toRaw(props.audit?.pages)));
 const auditorEmail = ref(props.audit?.auditorEmail || "");
 const auditorName = ref(props.audit?.auditorName ?? "");
 
