@@ -12,6 +12,7 @@ import {
   useResultsStore,
   useSystemStore
 } from "../../store";
+import JiraExportMenuItem from "../../talan/jira-export/JiraExportMenuItem.vue";
 import {
   captureWithPayloads,
   formatBytes,
@@ -407,6 +408,11 @@ onMounted(() => {
                     CSV – {{ formatBytes(csvExportSizeEstimation, 2) }}
                   </span>
                 </a>
+              </li>
+              <li class="dropdown-item">
+                <JiraExportMenuItem
+                  @exported="optionsDropdownRef?.closeOptions()"
+                />
               </li>
               <li aria-hidden="true" class="dropdown-separator" />
               <li class="dropdown-item">
