@@ -99,7 +99,11 @@ applications:
             - "index.html"
           # Renvoie index.html pour toutes les routes (SPA Vue Router)
           passthru: "/index.html"
-          expires: 1h
+          # Pas de cache sur index.html : il référence les assets hashés du
+          # build courant, une version périmée casse le front après un déploiement
+          expires: -1
+          headers:
+            Cache-Control: "max-age=0, must-revalidate, no-cache"
         "/assets":
           root: "confiture-web-app/dist/assets"
           # Cache longue durée — Vite intègre un hash dans les noms de fichiers
