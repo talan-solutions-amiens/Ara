@@ -92,7 +92,7 @@ async function resetPassword(newPassword: string) {
     notify(
       "error",
       "Impossible de procéder à la mise à jour du mot de passe",
-      "Une erreur inconnue empêche la mise à jour du mot de passe. Contactez-nous à l'adresse ara@design.numerique.gouv.fr si le problème persiste."
+      "Une erreur inconnue empêche la mise à jour du mot de passe. Réessayez. Si le problème persiste, contactez Talan."
     );
     captureWithPayloads(e, false);
   }
