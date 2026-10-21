@@ -165,6 +165,34 @@ il faudra re-vérifier ce genre de script à chaque gros sync).
 **Statut** : corrigé et testé en local (ddev, build à partir d'un état
 propre). En attente de commit/push/déploiement.
 
+## Message de contact des notifications d'erreur (ARA-4)
+
+**Date** : 2026-10-15
+**Branche** : `hichemChair/fix-session-expired-error`
+
+**Pourquoi** : les notifications d'erreur (par exemple après expiration de
+la session) renvoyaient vers l'adresse DISIC `ara@design.numerique.gouv.fr`.
+Sur l'instance Talan, elles affichent : « Réessayez. Si le problème
+persiste, contactez Talan. »
+
+## **Fichiers ajoutés (propres au fork)** :
+
+Aucun.
+
+## **Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/enums.ts` : `DEFAULT_NOTIFICATION_ERROR_DESCRIPTION`
+  et `FileMessage.UNKNOWN_ERROR`
+- `confiture-web-app/src/pages/account/ResetPasswordPage.vue` : notification
+  d'échec de mise à jour du mot de passe
+
+L'adresse DISIC reste dans les pages d'erreur, les pages compte, la page
+avis et les emails de l'API (hors périmètre du ticket).
+
+**Configuration à prévoir** : aucune.
+
+**Statut** : en revue.
+
 ---
 
 ## Raccourci ⌘/Ctrl + ⇧ + M pour le passage de code (Tiptap)
