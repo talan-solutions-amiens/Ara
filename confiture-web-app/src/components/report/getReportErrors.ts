@@ -21,10 +21,17 @@ export type ReportError = {
   }[];
 };
 
+/** Criterium key used by the criteria filter, ex: "6.1" */
+export function getCriteriumKey(result: { topic: number; criterium: number }) {
+  return `${result.topic}.${result.criterium}`;
+}
+
 export function getReportErrors(
   report: ReportStoreState,
   quickWinFilter: boolean,
-  userImpactFilters: Array<ReportUserImpact | null>
+  userImpactFilters: Array<ReportUserImpact | null>,
+  // Empty means no criteria filter
+  criteriumFilters: string[] = []
 ): ReportError[] {
   const resultsGroupedByPage = {
     // include pages with no errors
@@ -37,6 +44,12 @@ export function getReportErrors(
       report.data?.results
         .filter((r) => {
           return r.status === CriteriumResultStatus.NOT_COMPLIANT;
+        })
+        .filter((r) => {
+          return (
+            criteriumFilters.length === 0 ||
+            criteriumFilters.includes(getCriteriumKey(r))
+          );
         })
         .map((r) => ({
           ...r,
