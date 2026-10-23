@@ -9,6 +9,7 @@ import ReportErrors from "../../components/report/ReportErrors.vue";
 import ReportImprovements from "../../components/report/ReportImprovements.vue";
 import ReportNotes from "../../components/report/ReportNotes.vue";
 import ReportResults from "../../components/report/ReportResults.vue";
+import ReportStatistics from "../../components/report/ReportStatistics.vue";
 import CopyButton from "../../components/ui/CopyButton.vue";
 import Dropdown from "../../components/ui/Dropdown.vue";
 import TopLink from "../../components/ui/TopLink.vue";
@@ -92,6 +93,12 @@ const tabsData = computed((): TabData[] => {
       component: ReportNotes
     });
   }
+
+  // Statistics (Talan, ARA-7)
+  tabs.push({
+    label: StaticTabLabel.REPORT_STATISTICS_TAB_LABEL,
+    component: ReportStatistics
+  });
 
   return tabs;
 });
