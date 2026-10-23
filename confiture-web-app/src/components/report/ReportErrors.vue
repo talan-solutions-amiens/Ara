@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { sum } from "lodash-es";
 
-import { computed, nextTick, ref, useTemplateRef } from "vue";
+import { computed, nextTick, ref, useId, useTemplateRef } from "vue";
+import rgaa from "../../criteres.json";
 import { StaticTabLabel, TabSlug } from "../../enums";
 import { useReportStore } from "../../store";
 import {
@@ -10,7 +11,7 @@ import {
   ReportUserImpact
 } from "../../types";
 import { pluralize } from "../../utils";
-import { getReportErrors } from "./getReportErrors";
+import { getCriteriumKey, getReportErrors } from "./getReportErrors";
 import ReportCriteria from "./ReportCriteria.vue";
 import ReportErrorCriterium from "./ReportErrorCriterium.vue";
 
@@ -31,14 +32,19 @@ const userImpactFilters = ref<Array<ReportUserImpact | null>>(
 const showResetFiltersButton = computed(
   () =>
     userImpactFilters.value.length === defaultUserImpactFillters.length &&
-    !quickWinFilter.value
+    !quickWinFilter.value &&
+    criteriumFilters.value.length === 0
 );
 
 const quickWinFilter = ref(false);
 
+const criteriumFilters = ref<string[]>([]);
+const criteriumFilterId = useId();
+
 async function resetFilters() {
   userImpactFilters.value = defaultUserImpactFillters;
   quickWinFilter.value = false;
+  criteriumFilters.value = [];
   await nextTick();
   filterTitleRef.value?.focus();
 }
@@ -89,13 +95,61 @@ const unknownUserImpactErrorCount = computed(
       .length
 );
 
+// Criteria filter options: criteria with at least one error displayed by the
+// other filters, plus the selected ones so they can always be unchecked
+const criteriumFilterOptions = computed(() => {
+  type CriteriumOption = { topic: number; criterium: number; count: number };
+  const counts = new Map<string, CriteriumOption>();
+
+  getReportErrors(report, quickWinFilter.value, userImpactFilters.value)
+    .flatMap((page) => page.topics)
+    .flatMap((topic) => topic.errors)
+    .forEach((error) => {
+      const key = getCriteriumKey(error);
+      const option = counts.get(key) ?? {
+        topic: error.topic,
+        criterium: error.criterium,
+        count: 0
+      };
+      option.count += error.notCompliantItems.length;
+      counts.set(key, option);
+    });
+
+  criteriumFilters.value.forEach((key) => {
+    if (!counts.has(key)) {
+      const [topic, criterium] = key.split(".").map(Number);
+      counts.set(key, { topic, criterium, count: 0 });
+    }
+  });
+
+  return [...counts.entries()]
+    .map(([key, option]) => ({
+      key,
+      ...option,
+      title: getCriteriumTitle(option.topic, option.criterium)
+    }))
+    .sort((a, b) => a.topic - b.topic || a.criterium - b.criterium);
+});
+
+function getCriteriumTitle(topicNumber: number, criteriumNumber: number) {
+  // FIXME: "any everywhere" : The criteria properties of each topic do not have the same signature. See: https://github.com/microsoft/TypeScript/issues/33591#issuecomment-786443978
+  const title: string | undefined = (rgaa.topics as any)
+    .find((t: any) => t.number === topicNumber)
+    ?.criteria.find((c: any) => c.criterium.number === criteriumNumber)
+    ?.criterium.title;
+
+  // Remove Markdown links, ex: "Chaque [lien](#lien)" => "Chaque lien"
+  return title?.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") ?? "";
+}
+
 // Errors
 
 const allErrors = computed(() => {
   return getReportErrors(
     report,
     quickWinFilter.value,
-    userImpactFilters.value
+    userImpactFilters.value,
+    criteriumFilters.value
   );
 });
 
@@ -229,6 +283,53 @@ const notCompliantItemsIndexes = computed(() => {
           </div>
         </fieldset>
       </div>
+      <fieldset class="fr-fieldset fr-mb-3w">
+        <legend class="fr-fieldset__legend fr-text--regular fr-text--bold">
+          Critères à afficher
+        </legend>
+        <section class="fr-accordion fr-fieldset__content">
+          <div class="fr-accordion__title">
+            <button
+              class="fr-accordion__btn"
+              aria-expanded="false"
+              :aria-controls="criteriumFilterId"
+            >
+              Critère
+              <template v-if="criteriumFilters.length">
+                ({{ criteriumFilters.length }}
+                {{ pluralize("sélectionné", "sélectionnés", criteriumFilters.length) }})
+              </template>
+            </button>
+          </div>
+          <div :id="criteriumFilterId" class="fr-collapse">
+            <div>
+              <p v-if="!criteriumFilterOptions.length" class="fr-mb-0">
+                Aucun critère avec une non-conformité affichée.
+              </p>
+              <div
+                v-for="option in criteriumFilterOptions"
+                :key="option.key"
+                class="fr-checkbox-group"
+              >
+                <input
+                  :id="`criterium-filter-${option.topic}-${option.criterium}`"
+                  v-model="criteriumFilters"
+                  :value="option.key"
+                  type="checkbox"
+                />
+                <label
+                  class="fr-label"
+                  :for="`criterium-filter-${option.topic}-${option.criterium}`"
+                >
+                  {{ option.key }} ({{ option.count }}
+                  {{ pluralize("non-conformité", "non-conformités", option.count) }})
+                  <span class="fr-hint-text">{{ option.title }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+      </fieldset>
     </template>
 
     <template #transverse-data>
