@@ -167,6 +167,25 @@ propre). En attente de commit/push/déploiement.
 
 ---
 
+## Raccourci ⌘/Ctrl + ⇧ + M pour le passage de code (Tiptap)
+
+**Date** : 2026-09-21
+**Branche** : `feature/tiptap-code-shortcut`
+
+**Pourquoi** : demande de François N, raccourci en plus du `Mod-e` natif de
+Tiptap (⌘/Ctrl + E), qui reste actif.
+
+**Fichiers ajoutés (propres au fork)** :
+
+- `confiture-web-app/src/components/tiptap/extensions/CodeShortcutExtension.ts`
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/components/tiptap/tiptap-extensions.ts` : ajout de
+  `CodeShortcutExtension` dans `getTiptapEditorExtensions()`
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown
