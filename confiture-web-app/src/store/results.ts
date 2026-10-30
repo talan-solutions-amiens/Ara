@@ -556,7 +556,8 @@ export const useResultsStore = defineStore("results", {
               title: sample(["Titre non conforme", "Pas de titre"])!,
               comment: sample(["Commentaire non conforme", "Rien"])!,
               userImpact: sample(CriterionResultUserImpact)!,
-              quickWin: false
+              quickWin: false,
+              potentialDuplicate: false
             } as NotCompliantItem
           ]
         })) ?? [];

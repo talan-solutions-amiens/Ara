@@ -67,7 +67,7 @@ function getLabelError(notCompliantItemId?: number) {
         class="criterium-not-compliant-item"
       >
         <div :id="`${sectionId}_erreur_${index + 1}`" class="criterium-not-compliant-item-header">
-          <ul v-if="notCompliantItem.userImpact || notCompliantItem.quickWin" class="criterium-not-compliant-item-badges fr-badges-group fr-mb-2w">
+          <ul v-if="notCompliantItem.userImpact || notCompliantItem.quickWin || notCompliantItem.potentialDuplicate" class="criterium-not-compliant-item-badges fr-badges-group fr-mb-2w">
             <li v-if="notCompliantItem.userImpact">
               <p
                 class="fr-badge fr-badge--sm fr-m-1-5v"
@@ -85,6 +85,9 @@ function getLabelError(notCompliantItemId?: number) {
             </li>
             <li v-if="notCompliantItem.quickWin">
               <p class="fr-badge fr-badge--sm fr-m-1-5v">Facile à corriger</p>
+            </li>
+            <li v-if="notCompliantItem.potentialDuplicate">
+              <p class="fr-badge fr-badge--sm fr-m-1-5v">Doublon potentiel</p>
             </li>
           </ul>
 

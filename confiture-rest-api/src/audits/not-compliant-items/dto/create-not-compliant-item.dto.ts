@@ -17,4 +17,8 @@ export class CreateNotCompliantItemDto {
   @IsBoolean()
   @IsOptional()
   quickWin?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  potentialDuplicate?: boolean;
 }

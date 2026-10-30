@@ -320,6 +320,39 @@ motif en plus de la couleur pour chaque série.
 
 ---
 
+## Flag « Doublon potentiel » sur les erreurs
+
+**Date** : 2026-10-30
+
+**Branche** : `feature/ARA-10-flag-doublon`
+
+**Pourquoi** : ticket ARA-10. Marquer une erreur comme doublon potentiel, sur le
+modèle de « Facile à corriger » : case à cocher dans l'audit, étiquette et filtre
+de masquage dans le rapport, colonne dans le tableau des quick wins, colonne,
+label et ligne de description dans l'export Jira. Dépend des entrées « Onglet
+Statistiques » et « Export des erreurs en tickets Jira ».
+
+**Fichiers ajoutés (propres au fork)** :
+
+- `confiture-rest-api/prisma/migrations/20261030120000_add_potential_duplicate_to_not_compliant_item/`
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-rest-api/prisma/schema.prisma` : champ `potentialDuplicate` de
+  `NotCompliantItem`
+- `confiture-rest-api/src/audits/` : `audit.service.ts`, `prisma-selects.ts`,
+  DTO et service des `not-compliant-items`, `dto/audit-report.dto.ts`,
+  `dto/entities/not-compliant-item.dto.ts`, `dto/requests/update-results.dto.ts`
+- `confiture-web-app/src/components/audit/` : `CriteriumNotCompliantItem.vue`,
+  `CriteriumNotCompliantAccordion.vue`
+- `confiture-web-app/src/components/report/` : `ReportErrorCriterium.vue`,
+  `ReportErrors.vue`, `getReportErrors.ts`
+- `confiture-web-app/src/store/results.ts`
+
+**Statut** : en cours.
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown

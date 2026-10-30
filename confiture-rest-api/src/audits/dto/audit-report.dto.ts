@@ -201,4 +201,5 @@ class CriterionResultNotCompliantItem {
   comment: string | null;
   userImpact: CriterionResultUserImpact | null;
   quickWin: boolean | null;
+  potentialDuplicate: boolean | null;
 }
