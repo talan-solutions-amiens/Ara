@@ -262,6 +262,33 @@ le build casse et l'import est à corriger.
 
 ---
 
+## Filtre par critère dans le détail des non-conformités
+
+**Date** : 2026-10-23
+
+**Branche** : `feature/ARA-8-filtre-critere-rapport`
+
+**Pourquoi** : ticket ARA-8. Dans le rapport, onglet « Détails des
+non-conformités », pouvoir n'afficher que les erreurs de certains critères.
+Nouveau filtre « Critère » sous les filtres existants : cases à cocher dans un
+accordéon DSFR (le DSFR n'a pas de liste déroulante à sélection multiple).
+Seuls les critères ayant au moins une erreur affichée par les autres filtres
+sont proposés, libellés `6.1 (3 non-conformités)` et triés par numéro ; un
+critère coché reste visible, même à 0, pour pouvoir le décocher.
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/components/report/ReportErrors.vue` : état
+  `criteriumFilters`, options calculées, bloc du filtre, réinitialisation.
+- `confiture-web-app/src/components/report/getReportErrors.ts` : nouveau
+  paramètre optionnel `criteriumFilters` et helper `getCriteriumKey`.
+- `cypress/e2e/report/report.cy.ts` : test « User can filter errors by
+  criterium ».
+
+**Statut** : en cours.
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown

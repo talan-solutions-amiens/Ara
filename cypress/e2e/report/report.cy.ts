@@ -68,6 +68,32 @@ describe("Report", () => {
     });
   });
 
+  it("User can filter errors by criterium", () => {
+    cy.createTestAudit({ isComplete: true }).then(({ reportId }) => {
+      cy.visit(`http://localhost:3000/rapport/${reportId}`);
+      cy.contains("button", "Détails des non-conformités").click();
+      cy.contains("315 non-conformités");
+
+      cy.contains("button", "Critère").click();
+      cy.get("[id^='criterium-filter-'] + label")
+        .first()
+        .invoke("text")
+        .then((text) => {
+          const count = Number(text.match(/\((\d+) non-conformit/)![1]);
+
+          cy.get("[id^='criterium-filter-'] + label").first().click();
+          cy.contains("button", "Critère (1 sélectionné)");
+          cy.get(".criterium-title").then((els) => {
+            expect(els).to.have.length(count);
+          });
+        });
+
+      cy.contains("button", "Réinitialiser les filtres").click();
+      cy.contains("315 non-conformités");
+      cy.get("[id^='criterium-filter-']:checked").should("not.exist");
+    });
+  });
+
   it("User can reach topics titles with anchors", () => {
     cy.createTestAudit().then(({ reportId }) => {
       const slug = TabSlug.REPORT_ERRORS_SLUG;
