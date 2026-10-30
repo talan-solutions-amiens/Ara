@@ -4,7 +4,6 @@
  * a pair designed to stay readable in light and dark themes.
  */
 export type StatisticsHeaderColor =
-  | "none"
   | "blue"
   | "info"
   | "success"
@@ -63,11 +62,6 @@ defineProps<{
 <style scoped>
 .fr-table th.statistics-th {
   color: var(--text-inverted-grey);
-}
-
-.fr-table th.statistics-th--none {
-  color: inherit;
-  background-color: transparent;
 }
 
 .fr-table th.statistics-th--blue {

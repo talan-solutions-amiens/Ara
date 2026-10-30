@@ -37,13 +37,6 @@ const complianceLevel = computed(() => {
   return rate >= 50 ? "partiellement conforme" : "non conforme";
 });
 
-// Legend of the "% C" cell colors, see rateLevel()
-const RATE_LEVELS = [
-  { level: "low", label: "% C inférieur à 50 %" },
-  { level: "medium", label: "% C de 50 % à 99 %" },
-  { level: "high", label: "% C égal à 100 %" }
-];
-
 // Level of a page compliance rate, for the "% C" cell color
 // Based on the displayed (rounded) rate so the color matches the figure
 function rateLevel(rate: number | null) {
@@ -183,7 +176,7 @@ const errorsCount = computed(() =>
         </template>
       </p>
 
-      <div class="statistics-global">
+      <div>
         <div>
           <p class="fr-text--bold fr-mb-2w">Conformité au RGAA 4</p>
           <StatisticsDonut
@@ -192,29 +185,25 @@ const errorsCount = computed(() =>
             :center-label="formatRate(statistics.global.complianceRate)"
           />
         </div>
-        <div class="statistics-note">
+        <div class="statistics-note fr-mt-3w">
           <p class="fr-text--bold">Note sur le calcul de conformité :</p>
           <p>
             La conformité globale est calculée de la manière suivante :
-            <strong>C / (C + NC)</strong>
+            <strong>C / (C+NC)</strong>
           </p>
           <p>
-            <em>« C » est le nombre de critères conformes.</em><br />
-            <em>« NC » le nombre de critères non conformes.</em>
+            <em>"C" est le nombre de critères conformes.</em><br />
+            <em>"NC" le nombre de critères non conformes.</em>
           </p>
           <p>Pour chacun des {{ criteriaCount }} critères on vérifie :</p>
           <ul>
             <li>
               s’il est <strong>non conforme sur au moins une page</strong>
               alors il est considéré non conforme pour le résultat global du
-              site ;
+              site
             </li>
             <li>
-              sinon, si <strong>au moins une page n’est pas évaluée</strong>,
-              il est considéré comme non testé ;
-            </li>
-            <li>
-              sinon, s’il est
+              s’il est
               <strong>au moins une fois conforme et jamais non conforme</strong>
               alors il est considéré comme conforme pour le résultat global du
               site.
@@ -237,7 +226,7 @@ const errorsCount = computed(() =>
           '% non conforme',
           '% non applicable'
         ]"
-        :header-colors="['none', 'info', 'success', 'error', 'grey']"
+        :header-colors="[undefined, 'info', 'success', 'error', 'grey']"
         :cell-colors="[undefined, 'info', 'success', 'error', 'grey']"
         :rows="topicsRows"
       />
@@ -251,10 +240,11 @@ const errorsCount = computed(() =>
       <h3 class="fr-h4">Statistiques par page</h3>
       <p class="statistics-rule">
         Pour chaque page, les éléments transverses sont pris en compte : un
-        critère est non conforme s’il l’est sur la page ou sur les éléments
-        transverses, sinon non testé si l’un des deux n’est pas évalué, sinon
-        conforme s’il l’est sur l’un des deux, sinon non applicable.
-        % C = C / (C + NC).
+        critère est “non conforme” (NC) s’il l’est sur la page ou sur les
+        éléments transverses, sinon “non testé” (NT) si l’un des deux n’est pas
+        évalué, sinon “conforme” (C) s’il l’est sur l’un des deux, sinon “non
+        applicable” (NA). Le pourcentage de conformité par page est calculé avec
+        la formule %C = C / (C + NC).
       </p>
 
       <div class="fr-table fr-table--no-caption fr-m-0 statistics-pages">
@@ -308,16 +298,6 @@ const errorsCount = computed(() =>
           </div>
         </div>
       </div>
-
-      <ul class="statistics-rate-legend fr-mt-2w">
-        <li v-for="level in RATE_LEVELS" :key="level.level">
-          <span
-            :class="`statistics-rate-legend__swatch statistics-pages__rate--${level.level}`"
-            aria-hidden="true"
-          />
-          {{ level.label }}
-        </li>
-      </ul>
 
       <ul class="statistics-key-figures fr-mt-4w">
         <li>
@@ -389,13 +369,6 @@ const errorsCount = computed(() =>
 </template>
 
 <style scoped>
-.statistics-global {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 2rem;
-  align-items: start;
-}
-
 .statistics-note {
   padding: 1.5rem;
   background: var(--background-alt-grey);
@@ -449,50 +422,18 @@ const errorsCount = computed(() =>
   font-weight: 700;
 }
 
-.statistics-rate-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.statistics-rate-legend li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0;
-}
-
-.statistics-rate-legend__swatch {
-  display: inline-block;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 1px solid var(--border-default-grey);
-}
-
-.fr-table td.statistics-pages__rate--low,
-.statistics-rate-legend__swatch.statistics-pages__rate--low {
+.fr-table td.statistics-pages__rate--low {
   background-color: var(--background-contrast-error);
 }
 
-.fr-table td.statistics-pages__rate--medium,
-.statistics-rate-legend__swatch.statistics-pages__rate--medium {
+.fr-table td.statistics-pages__rate--medium {
   background-color: var(--background-contrast-yellow-tournesol);
 }
 
-.fr-table td.statistics-pages__rate--high,
-.statistics-rate-legend__swatch.statistics-pages__rate--high {
+.fr-table td.statistics-pages__rate--high {
   /* Same green as the "Critères conformes" card of the results tab */
   color: var(--text-default-success);
   background-color: var(--background-contrast-green-emeraude);
-}
-
-@media (width < 62rem) {
-  .statistics-global {
-    grid-template-columns: 1fr;
-  }
 }
 
 .statistics-rule {
