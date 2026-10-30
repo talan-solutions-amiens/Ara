@@ -363,7 +363,8 @@ export class AuditService {
                   title: true,
                   comment: true,
                   userImpact: true,
-                  quickWin: true
+                  quickWin: true,
+                  potentialDuplicate: true
                 }
               },
               topic: true,
@@ -1538,6 +1539,7 @@ export class AuditService {
                     id: false,
                     comment: true,
                     quickWin: true,
+                    potentialDuplicate: true,
                     title: true,
                     userImpact: true,
                     criterionResultId: false
@@ -1557,6 +1559,7 @@ export class AuditService {
                     id: false,
                     comment: true,
                     quickWin: true,
+                    potentialDuplicate: true,
                     title: true,
                     userImpact: true,
                     criterionResultId: false

@@ -124,6 +124,10 @@ class CriterionResultNotCompliantItem {
 
   @IsBoolean()
   quickWin: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  potentialDuplicate?: boolean;
 }
 
 export class UpdateResultsDto {

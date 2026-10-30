@@ -31,7 +31,8 @@ export function getReportErrors(
   quickWinFilter: boolean,
   userImpactFilters: Array<ReportUserImpact | null>,
   // Empty means no criteria filter
-  criteriumFilters: string[] = []
+  criteriumFilters: string[] = [],
+  hideDuplicatesFilter = false
 ): ReportError[] {
   const resultsGroupedByPage = {
     // include pages with no errors
@@ -59,7 +60,7 @@ export function getReportErrors(
               (item.userImpact && userImpactFilters.includes(item.userImpact))
             ).filter((r) => {
               return quickWinFilter ? r.quickWin : r;
-            })
+            }).filter((r) => !hideDuplicatesFilter || !r.potentialDuplicate)
 
         }))
         .filter((r) => r.notCompliantItems.length > 0),

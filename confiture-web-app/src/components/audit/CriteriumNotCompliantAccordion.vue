@@ -47,7 +47,13 @@ const orderedItems = computed(() => {
 
 const notCompliantItemsCount = computed(() => {
   return props.notCompliantItems
-    .filter(x => x.comment || x.quickWin || x.title || x.userImpact)
+    .filter(x =>
+      x.comment
+      || x.quickWin
+      || x.potentialDuplicate
+      || x.title
+      || x.userImpact
+    )
     .length;
 });
 
