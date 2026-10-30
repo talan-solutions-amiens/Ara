@@ -120,6 +120,7 @@ const quickWinsRows = computed(() =>
     `${q.topic}.${q.criterium} ${q.title}`,
     `${q.errorsCount}`,
     `${q.quickWinCount}`,
+    `${q.potentialDuplicateCount}`,
     `${q.pagesCount}`
   ])
 );
@@ -337,6 +338,7 @@ const errorsCount = computed(() =>
             'Critère',
             'Nb erreurs',
             'Nb facile à corriger',
+            'Nb doublons potentiels',
             'Nb pages impactées'
           ]"
           :rows="quickWinsRows"

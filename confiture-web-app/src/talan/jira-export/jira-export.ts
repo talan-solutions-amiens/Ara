@@ -54,6 +54,7 @@ interface JiraTicket {
   wcag: string;
   userImpact: string;
   quickWin: string;
+  potentialDuplicate: string;
   audit: string;
   auditor: string;
   reportUrl: string;
@@ -149,6 +150,7 @@ function generateCsv(tickets: JiraTicket[]): string {
     ["Critères WCAG", (t) => t.wcag],
     ["Impact usager", (t) => t.userImpact],
     ["Facile à corriger", (t) => t.quickWin],
+    ["Doublon potentiel", (t) => t.potentialDuplicate],
     ["Audit", (t) => t.audit],
     ["Lien rapport Ara", (t) => t.reportUrl]
   ];
@@ -200,6 +202,7 @@ function getTicket(audit: Audit, { page, result, item }: ErrorToExport, origin: 
       `RGAA-${criterion}`,
       `RGAA-thematique-${result.topic}`,
       item?.quickWin ? "facile-a-corriger" : null,
+      item?.potentialDuplicate ? "doublon-potentiel" : null,
       isTransverse ? "element-transverse" : null
     ].filter((label): label is string => !!label),
     attachments,
@@ -211,6 +214,7 @@ function getTicket(audit: Audit, { page, result, item }: ErrorToExport, origin: 
     wcag: (criterium.references.find((r) => "wcag" in r)?.wcag ?? []).join(", "),
     userImpact,
     quickWin: item?.quickWin ? "Oui" : "Non",
+    potentialDuplicate: item?.potentialDuplicate ? "Oui" : "Non",
     audit: `${audit.procedureName} (${AUDIT_TYPE_LABEL[audit.auditType]}, ${getCriteriaCount(audit.auditType)} critères)`,
     auditor: audit.auditorName ?? "",
     reportUrl: `${origin}/rapport/${audit.consultUniqueId}/`
@@ -232,6 +236,7 @@ function getDescription(
     ["WCAG", escapeWiki(ticket.wcag)],
     ["Impact usager", ticket.userImpact || "Non renseigné"],
     ["Facile à corriger", ticket.quickWin],
+    ["Doublon potentiel", ticket.potentialDuplicate],
     ["Audit", escapeWiki(ticket.audit)],
     ["Auditeur", escapeWiki(ticket.auditor)],
     ["Rapport Ara", ticket.reportUrl]

@@ -8,4 +8,5 @@ export class NotCompliantItemDto {
   @ApiProperty({ enum: CriterionResultUserImpact })
   userImpact: CriterionResultUserImpact | null;
   quickWin: boolean;
+  potentialDuplicate: boolean;
 }

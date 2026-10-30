@@ -33,10 +33,12 @@ const showResetFiltersButton = computed(
   () =>
     userImpactFilters.value.length === defaultUserImpactFillters.length &&
     !quickWinFilter.value &&
+    !hideDuplicatesFilter.value &&
     criteriumFilters.value.length === 0
 );
 
 const quickWinFilter = ref(false);
+const hideDuplicatesFilter = ref(false);
 
 const criteriumFilters = ref<string[]>([]);
 const criteriumFilterId = useId();
@@ -44,6 +46,7 @@ const criteriumFilterId = useId();
 async function resetFilters() {
   userImpactFilters.value = defaultUserImpactFillters;
   quickWinFilter.value = false;
+  hideDuplicatesFilter.value = false;
   criteriumFilters.value = [];
   await nextTick();
   filterTitleRef.value?.focus();
@@ -101,7 +104,13 @@ const criteriumFilterOptions = computed(() => {
   type CriteriumOption = { topic: number; criterium: number; count: number };
   const counts = new Map<string, CriteriumOption>();
 
-  getReportErrors(report, quickWinFilter.value, userImpactFilters.value)
+  getReportErrors(
+    report,
+    quickWinFilter.value,
+    userImpactFilters.value,
+    [],
+    hideDuplicatesFilter.value
+  )
     .flatMap((page) => page.topics)
     .flatMap((topic) => topic.errors)
     .forEach((error) => {
@@ -149,7 +158,8 @@ const allErrors = computed(() => {
     report,
     quickWinFilter.value,
     userImpactFilters.value,
-    criteriumFilters.value
+    criteriumFilters.value,
+    hideDuplicatesFilter.value
   );
 });
 
@@ -278,6 +288,16 @@ const notCompliantItemsIndexes = computed(() => {
               />
               <label class="fr-label" for="quick-win-filter">
                 Uniquement les erreurs faciles à corriger
+              </label>
+            </div>
+            <div class="fr-checkbox-group">
+              <input
+                id="hide-duplicates-filter"
+                v-model="hideDuplicatesFilter"
+                type="checkbox"
+              />
+              <label class="fr-label" for="hide-duplicates-filter">
+                Masquer les erreurs en doublon potentiels
               </label>
             </div>
           </div>
