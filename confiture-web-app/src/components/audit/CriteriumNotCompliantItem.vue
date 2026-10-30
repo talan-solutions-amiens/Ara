@@ -163,7 +163,7 @@ defineExpose({
   </RadioGroup>
 
   <!-- QUICK WIN -->
-  <div class="fr-fieldset__element fr-fieldset__element--inline fr-mb-0">
+  <div class="fr-fieldset__element fr-fieldset__element--inline fr-mb-1w">
     <div class="fr-checkbox-group">
       <input
         :id="`criterium-quick-win-${item.id}-${index}`"
