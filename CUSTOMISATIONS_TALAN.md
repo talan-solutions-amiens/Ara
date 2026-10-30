@@ -214,6 +214,29 @@ Tiptap (⌘/Ctrl + E), qui reste actif.
 
 ---
 
+## Suppression du bandeau de questionnaire
+
+**Date** : 2026-10-23
+
+**Branche** : `feature/ARA-9-masquer-bandeau-questionnaire`
+
+**Pourquoi** : ticket ARA-9. Le bandeau « Vos avis nous sont précieux… »
+renvoie vers le formulaire de retours de DISIC, sans intérêt pour la version
+Talan. Il s'affichait sous l'en-tête de toutes les pages, rapports compris.
+Le bandeau est retiré, la page de retours (`FeedbackPage.vue`) et ses autres
+liens restent en place.
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/App.vue` : suppression du bloc `fr-notice` et de sa
+  logique (`showFeedbackNotice`, `closeFeedbackNotice`, clé localStorage
+  `ara:hide-feedback-notice`). Si DISIC modifie ce bandeau, le merge
+  conflictera : garder la suppression.
+
+**Statut** : en cours.
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown

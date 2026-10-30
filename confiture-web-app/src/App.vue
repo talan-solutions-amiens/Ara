@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useHead } from "@unhead/vue";
-import { onMounted, ref } from "vue";
+import { onMounted } from "vue";
 
 import GenericModal from "./components/GenericModal.vue";
 import SiteFooter from "./components/layout/SiteFooter.vue";
@@ -42,29 +42,6 @@ onMounted(() => {
     accountStore.refreshToken();
   }
 });
-
-// Feedback notice display
-const feedbackLocalStorageKey = "ara:hide-feedback-notice";
-const showFeedbackNotice = ref(!localStorage.getItem(feedbackLocalStorageKey));
-
-function closeFeedbackNotice() {
-  showFeedbackNotice.value = false;
-  localStorage.setItem(feedbackLocalStorageKey, "true");
-
-  // Focus page h1 and set attributes if needed
-  const pageHeading: HTMLHeadingElement | null =
-    document.querySelector("main h1");
-
-  const pageHeadingIsFocusable =
-    pageHeading?.hasAttribute("tabindex") &&
-    pageHeading.getAttribute("tabindex") === "-1";
-
-  if (!pageHeadingIsFocusable) {
-    pageHeading?.setAttribute("tabindex", "-1");
-  }
-
-  pageHeading?.focus();
-}
 </script>
 
 <template>
@@ -92,27 +69,6 @@ function closeFeedbackNotice() {
   <GenericModal />
 
   <SiteHeader />
-
-  <div v-if="showFeedbackNotice" class="fr-notice fr-notice--info">
-    <div class="fr-container">
-      <div class="fr-notice__body">
-        <p>
-          <span class="fr-notice__title">
-            Vos avis nous sont précieux pour améliorer cet outil, n’hésitez pas
-            à nous faire part de vos retours depuis ce
-            <RouterLink :to="{ name: 'feedback' }" target="_blank">
-              court formulaire
-              <span class="fr-sr-only">(nouvelle fenêtre)</span></RouterLink>.
-          </span>
-        </p>
-        <button
-          title="Masquer le message"
-          class="fr-btn--close fr-btn"
-          @click="closeFeedbackNotice"
-        >Masquer le message</button>
-      </div>
-    </div>
-  </div>
 
   <main id="main" role="main" class="fr-container fr-mb-12w" tabindex="-1">
     <AraBreadcrumb />
