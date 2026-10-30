@@ -289,6 +289,37 @@ critère coché reste visible, même à 0, pour pouvoir le décocher.
 
 ---
 
+## Onglet « Statistiques » du rapport
+
+**Date** : 2026-10-23
+
+**Branche** : `feature/ARA-7-statistiques-rapport`
+
+**Pourquoi** : ticket ARA-7. Nouvel onglet « Statistiques » en dernière
+position du rapport, avec les statistiques de fin d'audit : résultat global
+(anneau C / NC et note de calcul), résultats par thématique (tableau et
+histogramme), statistiques par page (éléments transverses inclus, % C par
+palier : moins de 50 %, 50 à 99 %, 100 %), quick wins et impacts sur
+l'usager. Tout est calculé côté front à partir des résultats du rapport, sans
+changement d'API. Graphiques en SVG et CSS, sans nouvelle dépendance, avec un
+motif en plus de la couleur pour chaque série.
+
+**Fichiers ajoutés (propres au fork)** :
+
+- `confiture-web-app/src/components/report/getReportStatistics.ts` : calculs
+- `confiture-web-app/src/components/report/ReportStatistics.vue` : onglet
+- `confiture-web-app/src/components/report/statistics/` : tableaux,
+  anneau, histogramme, légende et palette des séries
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/enums.ts` : libellé et slug de l'onglet
+- `confiture-web-app/src/pages/report/ReportPage.vue` : ajout de l'onglet
+
+**Statut** : en recette.
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown
