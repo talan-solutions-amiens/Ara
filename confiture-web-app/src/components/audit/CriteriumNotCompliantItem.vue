@@ -176,6 +176,21 @@ defineExpose({
       </label>
     </div>
   </div>
+
+  <!-- POTENTIAL DUPLICATE -->
+  <div class="fr-fieldset__element fr-fieldset__element--inline fr-mb-0">
+    <div class="fr-checkbox-group">
+      <input
+        :id="`criterium-potential-duplicate-${item.id}-${index}`"
+        :checked="item.potentialDuplicate"
+        type="checkbox"
+        @input="handleItemChange('potentialDuplicate', ($event.target as HTMLInputElement).checked)"
+      />
+      <label class="fr-label" :for="`criterium-potential-duplicate-${item.id}-${index}`">
+        Doublon potentiel
+      </label>
+    </div>
+  </div>
 </template>
 
 <style scoped>

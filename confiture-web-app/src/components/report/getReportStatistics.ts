@@ -38,6 +38,7 @@ export interface QuickWinStatistics {
   title: string;
   errorsCount: number;
   quickWinCount: number;
+  potentialDuplicateCount: number;
   pagesCount: number;
 }
 
@@ -191,11 +192,15 @@ export function getReportStatistics(report: AuditReport): ReportStatistics {
         title: getCriteriumPlainTitle(r.topic, r.criterium),
         errorsCount: 0,
         quickWinCount: 0,
+        potentialDuplicateCount: 0,
         pagesCount: 0
       };
       quickWin.errorsCount += r.notCompliantItems.length;
       quickWin.quickWinCount += r.notCompliantItems.filter(
         (i) => i.quickWin
+      ).length;
+      quickWin.potentialDuplicateCount += r.notCompliantItems.filter(
+        (i) => i.potentialDuplicate
       ).length;
       quickWin.pagesCount++;
       quickWinsMap.set(key, quickWin);

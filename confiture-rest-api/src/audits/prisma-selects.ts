@@ -84,5 +84,6 @@ export const NOT_COMPLIANT_ITEM_SELECT: Prisma.NotCompliantItemSelect = {
   title: true,
   comment: true,
   quickWin: true,
+  potentialDuplicate: true,
   userImpact: true
 };

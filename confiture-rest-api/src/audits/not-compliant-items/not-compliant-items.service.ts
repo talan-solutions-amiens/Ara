@@ -50,6 +50,7 @@ export class NotCompliantItemsService {
         },
         comment: create?.comment,
         quickWin: create?.quickWin,
+        potentialDuplicate: create?.potentialDuplicate,
         title: create?.title,
         userImpact: create?.userImpact
       },
@@ -88,6 +89,7 @@ export class NotCompliantItemsService {
         title: update.title,
         comment: update.comment,
         quickWin: update.quickWin,
+        potentialDuplicate: update.potentialDuplicate,
         userImpact: update.userImpact
       },
       select: NOT_COMPLIANT_ITEM_SELECT

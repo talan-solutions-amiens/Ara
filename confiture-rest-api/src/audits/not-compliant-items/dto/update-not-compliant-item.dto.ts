@@ -17,4 +17,8 @@ export class UpdateNotCompliantItemDto {
   @IsBoolean()
   @IsOptional()
   quickWin?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  potentialDuplicate?: boolean;
 }
