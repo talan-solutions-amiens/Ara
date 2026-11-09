@@ -5,6 +5,10 @@ import ThemeModal from "./ThemeModal.vue";
 
 const debugStore = useDebugStore();
 
+// Date de dernière mise à jour de la version d'Ara réutilisée, exigée par la
+// Licence Ouverte 2.0 ; à mettre à jour à chaque merge DISIC.
+const araVersionDate = import.meta.env.VITE_ARA_UPSTREAM_DATE ?? "17/09/2026";
+
 function switchDevMode() {
   debugStore.saveDevMode(!debugStore.devMode);
 }
@@ -25,7 +29,7 @@ function switchDevMode() {
               class="fr-link fr-text--sm"
               href="https://github.com/DISIC/Ara"
               target="_blank"
-            >Ara</a>, sous
+            >Ara</a>, version du {{ araVersionDate }}, sous
             <a
               class="fr-link fr-text--sm"
 
