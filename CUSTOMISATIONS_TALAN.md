@@ -353,6 +353,35 @@ Statistiques » et « Export des erreurs en tickets Jira ».
 
 ---
 
+## Date de la version Ara réutilisée dans le pied de page
+
+**Date** : 2026-11-09
+
+**Pourquoi** : retour du juridique Talan (06/11/2026). Les mentions du pied de
+page identifient déjà Ara, la licence Etalab 2.0 et DesignGouv, mais la Licence
+Ouverte 2.0 exige en plus « la date de la dernière mise à jour de l'Information
+réutilisée » (voir `LICENCES.md`). Le pied de page affiche donc désormais
+« basé sur la solution Ara, version du 17/09/2026 » — date du dernier commit
+DISIC présent dans `main` (`f807c98`, repris par le merge `5a194b9` du
+21/09/2026), et non la date de notre merge.
+
+**Fichiers existants modifiés (risque de conflit)** :
+
+- `confiture-web-app/src/components/layout/SiteFooter.vue` : constante
+  `araVersionDate` et date dans la phrase de mention. Risque faible, la phrase
+  est déjà une customisation Talan.
+- `.upsun/config.yaml` : variable de build `VITE_ARA_UPSTREAM_DATE` de l'app
+  `frontend`.
+
+**Configuration à prévoir** : `VITE_ARA_UPSTREAM_DATE` est versionnée dans
+`.upsun/config.yaml` (date publique, pas de secret), donc rien à créer sur
+Upsun. En local, la variable est facultative : le composant retombe sur la même
+date en dur si elle est absente, pour qu'une mention légale ne puisse pas
+disparaître ou s'afficher `undefined`. **À mettre à jour à chaque merge DISIC**
+(voir la procédure de resynchronisation en haut de ce fichier).
+
+---
+
 ## Template pour une nouvelle entrée
 
 ```markdown

@@ -110,6 +110,13 @@ applications:
           expires: 365d
           passthru: false
 
+    variables:
+      env:
+        # Date de dernière mise à jour de la version d'Ara réutilisée, affichée
+        # dans le pied de page (exigence de la Licence Ouverte 2.0).
+        # À reporter à chaque merge DISIC, voir CUSTOMISATIONS_TALAN.md.
+        VITE_ARA_UPSTREAM_DATE: "17/09/2026"
+
     # Variables de build Vite (optionnelles, pour Sentry)
     # À définir via `upsun variable:create --prefix env: --build true` :
     # VITE_SENTRY_DSN
